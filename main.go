@@ -6,8 +6,12 @@ import (
 	"log"
 	"os"
 
+	_ "deketna/docs" // Import Swagger docs
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -19,7 +23,6 @@ func main() {
 
 	// Connect to database
 	config.ConnectDB()
-	defer config.DB.Close()
 
 	// Set up router
 	r := gin.Default()
@@ -27,6 +30,7 @@ func main() {
 	r.SetTrustedProxies(nil)
 	// Routes
 	router.InitializeRoutes(r)
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Start server
 	r.Run(":8080") // Default port is 8080

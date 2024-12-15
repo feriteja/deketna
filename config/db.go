@@ -1,16 +1,16 @@
 package config
 
 import (
+	"deketna/models"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *pgxpool.Pool
+var DB *gorm.DB
 
 func ConnectDB() {
 	dbHost := os.Getenv("DB_HOST")
@@ -26,10 +26,30 @@ func ConnectDB() {
 	)
 
 	// Connect to the database using GORM
-	_, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
+
+	sqlDB, err := db.DB() // Get raw SQL DB object
+	if err != nil {
+		log.Fatalf("Failed to get raw DB object: %v", err)
+	}
+	defer sqlDB.Close() // Defer closing the connection
+
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Profile{},
+		&models.Product{},
+		&models.Category{},
+		&models.Transaction{},
+		&models.AuditLog{},
+	)
+	if err != nil {
+		log.Fatal("Failed to migrate database schema:", err)
+	}
+
+	DB = db
 
 	log.Println("Successfully connected to the database!")
 }
