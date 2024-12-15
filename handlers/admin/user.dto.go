@@ -1,22 +1,13 @@
-package user
+package admin
 
 import (
 	"database/sql"
 	"time"
 )
 
-type CreateUserRequest struct {
-	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
-	Password string `json:"password" binding:"required,min=6" example:"password123"`
-}
-
 type SignInRequest struct {
 	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
 	Password string `json:"password" binding:"required,min=6" example:"password123"`
-}
-
-type CreateUserResponse struct {
-	Token string `json:"token" example:"your_jwt_token"`
 }
 
 type SignInResponse struct {

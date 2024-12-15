@@ -31,12 +31,6 @@ func ConnectDB() {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
 
-	sqlDB, err := db.DB() // Get raw SQL DB object
-	if err != nil {
-		log.Fatalf("Failed to get raw DB object: %v", err)
-	}
-	defer sqlDB.Close() // Defer closing the connection
-
 	err = db.AutoMigrate(
 		&models.User{},
 		&models.Profile{},

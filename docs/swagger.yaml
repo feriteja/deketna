@@ -1,4 +1,29 @@
 definitions:
+  admin.ErrorResponse:
+    properties:
+      error:
+        example: Invalid input
+        type: string
+    type: object
+  admin.SignInRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  admin.SignInResponse:
+    properties:
+      token:
+        example: your_jwt_token
+        type: string
+    type: object
   user.CreateUserRequest:
     properties:
       email:
@@ -24,10 +49,59 @@ definitions:
         example: Invalid input
         type: string
     type: object
+  user.SignInRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  user.SignInResponse:
+    properties:
+      token:
+        example: your_jwt_token
+        type: string
+    type: object
 info:
   contact: {}
 paths:
-  /user:
+  /admin/signin:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates as admin  with email and password
+      parameters:
+      - description: Admin sign-in data
+        in: body
+        name: admin
+        required: true
+        schema:
+          $ref: '#/definitions/admin.SignInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/admin.SignInResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/admin.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/admin.ErrorResponse'
+      summary: Sign in a admin
+      tags:
+      - Admin Auth
+  /user/register:
     post:
       consumes:
       - application/json
@@ -56,5 +130,35 @@ paths:
             $ref: '#/definitions/user.ErrorResponse'
       summary: Register a new user
       tags:
-      - User
+      - User Auth
+  /user/signin:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password
+      parameters:
+      - description: User sign-in data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/user.SignInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.SignInResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/user.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/user.ErrorResponse'
+      summary: Sign in a user (buyer)
+      tags:
+      - User Auth
 swagger: "2.0"

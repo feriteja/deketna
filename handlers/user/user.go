@@ -10,16 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 var jwtSecret = os.Getenv("JWT_SECRET")
 
-var jwtSecretKey = []byte("your_jwt_secret_key")
+var jwtSecretKey = []byte(jwtSecret)
 
 // CreateUser registers a new user with database integration
 // @Summary Register a new user
 // @Description Register a new user with email and password
-// @Tags User
+// @Tags User Auth
 // @Accept json
 // @Produce json
 // @Param user body CreateUserRequest true "User registration data"
@@ -61,7 +62,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// Generate JWT token
-	token, err := generateJWT(user.Email, user.ID)
+	token, err := generateJWT(user.Email, user.ID, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error generating JWT token."})
 		return
@@ -69,6 +70,62 @@ func CreateUser(c *gin.Context) {
 
 	// Return success response
 	c.JSON(http.StatusCreated, CreateUserResponse{Token: token})
+}
+
+// SignIn authenticates a user and returns a JWT token
+// @Summary Sign in a user (buyer)
+// @Description Authenticates a user with email and password
+// @Tags User Auth
+// @Accept json
+// @Produce json
+// @Param user body SignInRequest true "User sign-in data"
+// @Success 200 {object} SignInResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /user/signin [post]
+func SignIn(c *gin.Context) {
+	var req SignInRequest
+
+	// Bind and validate input
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input. Ensure email and password are provided correctly."})
+		return
+	}
+
+	// Check if the user exists
+	user, err := getUserByEmail(req.Email)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid email or password."})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error checking user credentials."})
+		}
+		return
+	}
+
+	// Compare the provided password with the hashed password in the database
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid email or password."})
+		return
+	}
+
+	// Generate JWT token
+	token, err := generateJWT(user.Email, user.ID, user.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error generating JWT token."})
+		return
+	}
+
+	// Return success response with JWT token
+	c.JSON(http.StatusOK, SignInResponse{Token: token})
+}
+
+// Helper: Get user by email from the database
+func getUserByEmail(email string) (User, error) {
+	var user User
+	result := config.DB.Where("email = ?", email).First(&user)
+	return user, result.Error
 }
 
 // Helper: Check if email already exists
@@ -85,14 +142,13 @@ func createUser(user *User) error {
 }
 
 // Helper: Generate JWT
-func generateJWT(email string, userID uint) (string, error) {
+func generateJWT(email string, userID uint, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"email":  email,
 		"userid": userID,
+		"role":   role,
 		"exp":    time.Now().Add(72 * time.Hour).Unix(), // Expires in 72 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecretKey)
 }
-
-// User represents the user table in the database

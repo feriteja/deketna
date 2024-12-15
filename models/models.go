@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type User struct {
 	ID        uint   `gorm:"primaryKey"`
@@ -10,6 +13,7 @@ type User struct {
 	Role      string `gorm:"type:user_role;not null"` // Referencing the user_role enum type
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 
 	Products     []Product     `gorm:"foreignKey:SellerID"` // One-to-many with Product
 	Transactions []Transaction `gorm:"foreignKey:BuyerID"`  // One-to-many with Transaction
