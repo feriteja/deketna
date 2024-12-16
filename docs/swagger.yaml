@@ -1,4 +1,18 @@
+basePath: /
 definitions:
+  admin.AddProductRequest:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+    required:
+    - name
+    - price
+    - stock
+    type: object
   admin.ErrorResponse:
     properties:
       error:
@@ -68,9 +82,60 @@ definitions:
         example: your_jwt_token
         type: string
     type: object
+host: localhost:8080
 info:
-  contact: {}
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for Deketna business application
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Deketna API
+  version: "1.0"
 paths:
+  /admin/product:
+    post:
+      consumes:
+      - application/json
+      description: Admin adds a new product
+      parameters:
+      - description: Product details
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/admin.AddProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Product added
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation Error
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Access forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a product
+      tags:
+      - Admin Product
   /admin/signin:
     post:
       consumes:
@@ -161,4 +226,10 @@ paths:
       summary: Sign in a user (buyer)
       tags:
       - User Auth
+securityDefinitions:
+  BearerAuth:
+    description: Enter "Bearer <token>" (e.g., "Bearer abc123") as the value.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

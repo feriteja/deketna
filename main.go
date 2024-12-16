@@ -14,6 +14,27 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Deketna API
+// @version 1.0
+// @description API for Deketna business application
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @type apiKey
+// @in header
+// @name Authorization
+// @description Enter "Bearer <token>" (e.g., "Bearer abc123") as the value.
+
 func main() {
 
 	// Load environment variables (optional)
