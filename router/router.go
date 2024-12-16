@@ -11,12 +11,13 @@ import (
 // InitializeRoutes sets up routes for the application
 func InitializeRoutes(r *gin.Engine) {
 	// User Routes
-	userRoutes := r.Group("/user")
+	userRoutes := r.Group("/")
 	{
-		userRoutes.POST("/register", user.CreateUser) // User registration
-		userRoutes.POST("/signin", user.SignIn)       // User login
-		// Example of other user routes (if needed):
-		// userRoutes.GET("/products", user.GetProducts)
+		userRoutes.POST("/register", user.CreateUser)         // User registration
+		userRoutes.POST("/signin", user.SignIn)               // User login
+		userRoutes.GET("/products", user.GetProducts)         // Get list of products
+		userRoutes.GET("/product/:id", user.GetProductDetail) // Get list of products
+
 	}
 
 	// Admin Routes

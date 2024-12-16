@@ -27,7 +27,7 @@ var jwtSecretKey = []byte(jwtSecret)
 // @Success 201 {object} CreateUserResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /user/register [post]
+// @Router /register [post]
 func CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 
@@ -82,7 +82,7 @@ func CreateUser(c *gin.Context) {
 // @Success 200 {object} SignInResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /user/signin [post]
+// @Router /signin [post]
 func SignIn(c *gin.Context) {
 	var req SignInRequest
 

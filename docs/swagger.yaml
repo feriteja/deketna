@@ -63,6 +63,30 @@ definitions:
         example: Invalid input
         type: string
     type: object
+  user.Product:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+    type: object
+  user.ProductDetail:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+    type: object
   user.SignInRequest:
     properties:
       email:
@@ -166,7 +190,69 @@ paths:
       summary: Sign in a admin
       tags:
       - Admin Auth
-  /user/register:
+  /product/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed information of a specific product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product details
+          schema:
+            $ref: '#/definitions/user.ProductDetail'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Product Detail
+      tags:
+      - User Products
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of products available for users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of products
+          schema:
+            items:
+              $ref: '#/definitions/user.Product'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Products
+      tags:
+      - User Products
+  /register:
     post:
       consumes:
       - application/json
@@ -196,7 +282,7 @@ paths:
       summary: Register a new user
       tags:
       - User Auth
-  /user/signin:
+  /signin:
     post:
       consumes:
       - application/json
