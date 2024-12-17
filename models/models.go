@@ -15,8 +15,8 @@ type User struct {
 	UpdatedAt time.Time
 	DeletedAt sql.NullTime `gorm:"index"`
 
-	Products     []Product     `gorm:"foreignKey:SellerID"` // One-to-many with Product
-	Transactions []Transaction `gorm:"foreignKey:BuyerID"`  // One-to-many with Transaction
+	Products []Product `gorm:"foreignKey:SellerID"` // One-to-many with Product
+	Orders   []Order   `gorm:"foreignKey:BuyerID"`  // One-to-many with Transaction
 }
 
 type Profile struct {
@@ -40,9 +40,9 @@ type Product struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 
-	Seller       User          `gorm:"foreignKey:SellerID;constraint:OnDelete:CASCADE"`
-	Category     Category      `gorm:"foreignKey:CategoryID"`
-	Transactions []Transaction `gorm:"foreignKey:ProductID"`
+	Seller   User     `gorm:"foreignKey:SellerID;constraint:OnDelete:CASCADE"`
+	Category Category `gorm:"foreignKey:CategoryID"`
+	Orders   []Order  `gorm:"foreignKey:ProductID"`
 }
 
 type Category struct {
@@ -55,20 +55,6 @@ type Category struct {
 	Products []Product `gorm:"foreignKey:CategoryID"` // One-to-many with Product
 }
 
-type Transaction struct {
-	ID         uint    `gorm:"primaryKey"`
-	ProductID  uint    `gorm:"not null"`
-	BuyerID    uint    `gorm:"not null"`
-	Quantity   int     `gorm:"not null;check:quantity > 0"`
-	TotalPrice float64 `gorm:"not null;check:total_price > 0"`
-	Status     string  `gorm:"type:transaction_status;default:'pending';not null"` // Enum type
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-
-	Product Product `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE"`
-	Buyer   User    `gorm:"foreignKey:BuyerID;constraint:OnDelete:CASCADE"`
-}
-
 type AuditLog struct {
 	ID        uint   `gorm:"primaryKey"`
 	UserID    uint   `gorm:"not null"`
@@ -76,4 +62,43 @@ type AuditLog struct {
 	CreatedAt time.Time
 
 	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+}
+
+type Cart struct {
+	ID        uint64     `gorm:"primaryKey" json:"id"`
+	BuyerID   uint64     `json:"buyer_id"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	Items     []CartItem `gorm:"foreignKey:CartID" json:"items"`
+}
+
+type CartItem struct {
+	ID        uint64    `gorm:"primaryKey" json:"id"`
+	CartID    uint64    `json:"cart_id"`
+	ProductID uint64    `json:"product_id"`
+	Quantity  int       `json:"quantity"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type Order struct {
+	ID          uint64      `gorm:"primaryKey" json:"id"`
+	BuyerID     uint64      `json:"buyer_id"`
+	TotalAmount float64     `json:"total_amount"`
+	Status      string      `json:"status"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	Items       []OrderItem `gorm:"foreignKey:OrderID" json:"items"`
+
+	Product Product `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE"`
+	Buyer   User    `gorm:"foreignKey:BuyerID;constraint:OnDelete:CASCADE"`
+}
+
+type OrderItem struct {
+	ID        uint64    `gorm:"primaryKey" json:"id"`
+	OrderID   uint64    `json:"order_id"`
+	ProductID uint64    `json:"product_id"`
+	Quantity  int       `json:"quantity"`
+	Price     float64   `json:"price"`
+	CreatedAt time.Time `json:"created_at"`
 }
