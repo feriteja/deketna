@@ -36,8 +36,11 @@ func ConnectDB() {
 		&models.Profile{},
 		&models.Product{},
 		&models.Category{},
-		&models.Transaction{},
 		&models.AuditLog{},
+		&models.Order{},
+		&models.OrderItem{},
+		&models.Cart{},
+		&models.CartItem{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database schema:", err)

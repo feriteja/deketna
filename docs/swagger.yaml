@@ -38,6 +38,43 @@ definitions:
         example: your_jwt_token
         type: string
     type: object
+  helper.ErrorDetail:
+    properties:
+      code:
+        description: HTTP status code
+        type: integer
+      message:
+        description: List of error messages
+        items:
+          type: string
+        type: array
+    type: object
+  helper.ErrorResponse:
+    properties:
+      error:
+        allOf:
+        - $ref: '#/definitions/helper.ErrorDetail'
+        description: Error details
+    type: object
+  helper.SuccessResponse:
+    properties:
+      data:
+        description: Response data (optional)
+      message:
+        description: Description of the operation
+        type: string
+    type: object
+  user.AddToCartRequest:
+    properties:
+      product_id:
+        description: ID of the product
+        type: integer
+      quantity:
+        type: integer
+    required:
+    - product_id
+    - quantity
+    type: object
   user.CreateUserRequest:
     properties:
       email:
@@ -65,19 +102,6 @@ definitions:
     type: object
   user.Product:
     properties:
-      id:
-        type: integer
-      name:
-        type: string
-      price:
-        type: number
-      stock:
-        type: integer
-    type: object
-  user.ProductDetail:
-    properties:
-      description:
-        type: string
       id:
         type: integer
       name:
@@ -190,6 +214,42 @@ paths:
       summary: Sign in a admin
       tags:
       - Admin Auth
+  /cart/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Add a product with a specific quantity to the buyer's cart
+      parameters:
+      - description: Product ID and Quantity
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/user.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product added to cart successfully
+          schema:
+            $ref: '#/definitions/helper.SuccessResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add Product to Cart
+      tags:
+      - Products
   /product/{id}:
     get:
       consumes:
@@ -207,28 +267,27 @@ paths:
         "200":
           description: Product details
           schema:
-            $ref: '#/definitions/user.ProductDetail'
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.Product'
+              type: object
         "400":
-          description: Bad Request
+          description: Invalid input data
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
         "404":
           description: Product not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
       summary: Get Product Detail
       tags:
-      - User Products
+      - Products
   /products:
     get:
       consumes:
@@ -238,20 +297,23 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of products
+          description: Products retrieved successfully
           schema:
-            items:
-              $ref: '#/definitions/user.Product'
-            type: array
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/user.Product'
+                  type: array
+              type: object
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
       summary: Get Products
       tags:
-      - User Products
+      - Products
   /register:
     post:
       consumes:

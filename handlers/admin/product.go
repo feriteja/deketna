@@ -43,7 +43,7 @@ func AddProduct(c *gin.Context) {
 		Name:     req.Name,
 		Price:    req.Price,
 		Stock:    req.Stock,
-		SellerID: uint(adminID), // Assign admin as the seller
+		SellerID: uint64(adminID), // Assign admin as the seller
 	}
 	if err := config.DB.Create(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add product"})

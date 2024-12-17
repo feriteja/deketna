@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -13,7 +12,7 @@ type User struct {
 	Role      string `gorm:"type:user_role;not null"` // Referencing the user_role enum type
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt sql.NullTime `gorm:"index"`
+	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"` // Use *time.Time for nullable timestamp
 
 	Products []Product `gorm:"foreignKey:SellerID"` // One-to-many with Product
 	Orders   []Order   `gorm:"foreignKey:BuyerID"`  // One-to-many with Transaction
@@ -31,18 +30,17 @@ type Profile struct {
 }
 
 type Product struct {
-	ID         uint    `gorm:"primaryKey"`
-	Name       string  `gorm:"size:255;not null"`
-	Price      float64 `gorm:"not null;check:price > 0"`
-	Stock      int     `gorm:"not null;check:stock >= 0"`
-	SellerID   uint    `gorm:"not null"`
-	CategoryID *uint   // Optional field for category
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID         uint64    `gorm:"primaryKey" json:"id"`
+	Name       string    `json:"name"`
+	Price      float64   `json:"price"`
+	Stock      int       `json:"stock"`
+	SellerID   uint64    `json:"seller_id"`
+	CategoryID *uint     `json:"category_id,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 
 	Seller   User     `gorm:"foreignKey:SellerID;constraint:OnDelete:CASCADE"`
 	Category Category `gorm:"foreignKey:CategoryID"`
-	Orders   []Order  `gorm:"foreignKey:ProductID"`
 }
 
 type Category struct {
@@ -90,8 +88,7 @@ type Order struct {
 	UpdatedAt   time.Time   `json:"updated_at"`
 	Items       []OrderItem `gorm:"foreignKey:OrderID" json:"items"`
 
-	Product Product `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE"`
-	Buyer   User    `gorm:"foreignKey:BuyerID;constraint:OnDelete:CASCADE"`
+	Buyer User `gorm:"foreignKey:BuyerID;constraint:OnDelete:CASCADE"`
 }
 
 type OrderItem struct {
@@ -99,6 +96,10 @@ type OrderItem struct {
 	OrderID   uint64    `json:"order_id"`
 	ProductID uint64    `json:"product_id"`
 	Quantity  int       `json:"quantity"`
-	Price     float64   `json:"price"`
+	Price     float64   `json:"price"` // Price at the time of purchase
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	Order   Order   `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE"`
+	Product Product `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE"`
 }

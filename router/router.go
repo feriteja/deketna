@@ -16,7 +16,12 @@ func InitializeRoutes(r *gin.Engine) {
 		userRoutes.POST("/register", user.CreateUser)         // User registration
 		userRoutes.POST("/signin", user.SignIn)               // User login
 		userRoutes.GET("/products", user.GetProducts)         // Get list of products
-		userRoutes.GET("/product/:id", user.GetProductDetail) // Get list of products
+		userRoutes.GET("/product/:id", user.GetProductDetail) // Get detail of products
+
+		userRoutes.Use(middleware.BuyerRoleMiddleware())
+		{
+			userRoutes.POST("/cart/:id", user.AddToCart) // add to cart
+		}
 
 	}
 
