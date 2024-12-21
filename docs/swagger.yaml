@@ -13,11 +13,75 @@ definitions:
     - price
     - stock
     type: object
+  admin.AdminOrderResponse:
+    properties:
+      buyer:
+        $ref: '#/definitions/admin.OrderBuyerResponse'
+      items:
+        items:
+          $ref: '#/definitions/admin.OrderItemResponse'
+        type: array
+      order_id:
+        example: 1
+        type: integer
+      status:
+        example: completed
+        type: string
+      total_amount:
+        example: 75.5
+        type: number
+    type: object
   admin.ErrorResponse:
     properties:
       error:
         example: Invalid input
         type: string
+    type: object
+  admin.OrderBuyerResponse:
+    properties:
+      email:
+        example: buyer@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      phone:
+        example: "123456789"
+        type: string
+    type: object
+  admin.OrderItemResponse:
+    properties:
+      price:
+        example: 25
+        type: number
+      product_name:
+        example: Product A
+        type: string
+      quantity:
+        example: 2
+        type: integer
+    type: object
+  admin.PaginatedAdminOrdersResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/admin.AdminOrderResponse'
+        type: array
+      isNext:
+        example: true
+        type: boolean
+      isPrev:
+        example: false
+        type: boolean
+      limit:
+        example: 10
+        type: integer
+      page:
+        example: 1
+        type: integer
+      totalItem:
+        example: 50
+        type: integer
     type: object
   admin.SignInRequest:
     properties:
@@ -44,7 +108,6 @@ definitions:
         description: HTTP status code
         type: integer
       message:
-        description: List of error messages
         items:
           type: string
         type: array
@@ -88,17 +151,61 @@ definitions:
     - email
     - password
     type: object
-  user.CreateUserResponse:
+  user.OrderItemResponse:
     properties:
-      token:
-        example: your_jwt_token
+      price:
+        example: 25
+        type: number
+      product_name:
+        example: Product A
         type: string
+      quantity:
+        example: 2
+        type: integer
     type: object
-  user.ErrorResponse:
+  user.OrderResponse:
     properties:
-      error:
-        example: Invalid input
+      items:
+        items:
+          $ref: '#/definitions/user.OrderItemResponse'
+        type: array
+      order_id:
+        example: 1
+        type: integer
+      status:
+        example: completed
         type: string
+      total_amount:
+        example: 75.5
+        type: number
+    type: object
+  user.PaginatedOrdersResponse:
+    properties:
+      data:
+        description: List of orders
+        items:
+          $ref: '#/definitions/user.OrderResponse'
+        type: array
+      isNext:
+        description: Whether there is a next page
+        example: true
+        type: boolean
+      isPrev:
+        description: Whether there is a previous page
+        example: false
+        type: boolean
+      limit:
+        description: Number of items per page
+        example: 10
+        type: integer
+      page:
+        description: Current page number
+        example: 1
+        type: integer
+      totalItem:
+        description: Total number of items
+        example: 25
+        type: integer
     type: object
   user.Product:
     properties:
@@ -114,7 +221,7 @@ definitions:
   user.SignInRequest:
     properties:
       email:
-        example: user@example.com
+        example: user1@example.com
         type: string
       password:
         example: password123
@@ -144,6 +251,47 @@ info:
   title: Deketna API
   version: "1.0"
 paths:
+  /admin/orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all orders with buyer details
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by order status (e.g., pending, completed, cancelled)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of all orders with details
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/admin.PaginatedAdminOrdersResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Admin View Orders
+      tags:
+      - Admin Orders
   /admin/product:
     post:
       consumes:
@@ -250,6 +398,79 @@ paths:
       summary: Add Product to Cart
       tags:
       - Products
+  /order:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order from the buyer's cart, validate stock, deduct
+        quantities, and clear the cart
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order placed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  properties:
+                    order_id:
+                      type: integer
+                    total_amount:
+                      type: number
+                  type: object
+              type: object
+        "400":
+          description: 'Bad Request: Cart is empty or insufficient stock'
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Place Order
+      tags:
+      - User Orders
+  /orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of orders placed by the authenticated buyer
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of orders with details
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.PaginatedOrdersResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: View Orders
+      tags:
+      - User Orders
   /product/{id}:
     get:
       consumes:
@@ -329,18 +550,23 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: User Created successfully
           schema:
-            $ref: '#/definitions/user.CreateUserResponse'
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.SignInResponse'
+              type: object
         "400":
-          description: Bad Request
+          description: 'Bad Request: Invalid input/Email is already registered'
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/helper.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/helper.ErrorResponse'
       summary: Register a new user
       tags:
       - User Auth
@@ -360,17 +586,22 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: User Login successfully
           schema:
-            $ref: '#/definitions/user.SignInResponse'
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.SignInResponse'
+              type: object
         "400":
-          description: Bad Request
+          description: 'Bad Request: Invalid input'
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/helper.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/helper.ErrorResponse'
       summary: Sign in a user (buyer)
       tags:
       - User Auth

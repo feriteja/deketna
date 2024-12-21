@@ -21,6 +21,8 @@ func InitializeRoutes(r *gin.Engine) {
 		userRoutes.Use(middleware.BuyerRoleMiddleware())
 		{
 			userRoutes.POST("/cart/:id", user.AddToCart) // add to cart
+			userRoutes.POST("/order", user.PlaceOrder)   // add to cart
+			userRoutes.GET("/orders", user.ViewOrders)   // add to cart
 		}
 
 	}
@@ -32,6 +34,7 @@ func InitializeRoutes(r *gin.Engine) {
 		adminRoutes.POST("/signin", admin.SignIn)               // Admin login
 		adminRoutes.POST("/product", admin.AddProduct)          // Add a product
 		adminRoutes.DELETE("/product/:id", admin.DeleteProduct) // Delete a product by ID
+		adminRoutes.GET("/orders", admin.ViewOrders)            // Delete a product by ID
 		// Example of other admin routes (if needed):
 		// adminRoutes.PUT("/product/:id", admin.UpdateProduct)
 	}

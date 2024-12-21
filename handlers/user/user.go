@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"deketna/config"
+	"deketna/helper"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -24,29 +25,30 @@ var jwtSecretKey = []byte(jwtSecret)
 // @Accept json
 // @Produce json
 // @Param user body CreateUserRequest true "User registration data"
-// @Success 201 {object} CreateUserResponse
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} helper.SuccessResponse{data=SignInResponse} "User Created successfully"
+// @Failure 400 {object} helper.ErrorResponse "Bad Request: Invalid input/Email is already registered"
+// @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
 // @Router /register [post]
 func CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 
 	// Bind and validate input
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input. Ensure email and password are provided correctly."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Invalid input. Ensure email and password are provided correctly."})
 		return
 	}
 
 	// Check if email already exists
 	if isEmailTaken(req.Email) {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Email is already registered."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Email is already registered."})
+
 		return
 	}
 
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error hashing password."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Error hashing password."})
 		return
 	}
 
@@ -57,19 +59,23 @@ func CreateUser(c *gin.Context) {
 		Role:     "buyer", // Default role
 	}
 	if err := createUser(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error creating user in database."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Error creating user in database."})
+
 		return
 	}
 
 	// Generate JWT token
 	token, err := generateJWT(user.Email, user.ID, user.Role)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error generating JWT token."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Error generating JWT token."})
+
 		return
 	}
 
 	// Return success response
-	c.JSON(http.StatusCreated, CreateUserResponse{Token: token})
+	helper.SendSuccess(c, http.StatusOK, "User Created successfully", gin.H{
+		"Token": token,
+	})
 }
 
 // SignIn authenticates a user and returns a JWT token
@@ -79,16 +85,16 @@ func CreateUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user body SignInRequest true "User sign-in data"
-// @Success 200 {object} SignInResponse
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} helper.SuccessResponse{data=SignInResponse} "User Login successfully"
+// @Failure 400 {object} helper.ErrorResponse  "Bad Request: Invalid input"
+// @Failure 500 {object} helper.ErrorResponse  "Internal Server Error"
 // @Router /signin [post]
 func SignIn(c *gin.Context) {
 	var req SignInRequest
 
 	// Bind and validate input
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input. Ensure email and password are provided correctly."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Invalid input. Ensure email and password are provided correctly."})
 		return
 	}
 
@@ -96,9 +102,11 @@ func SignIn(c *gin.Context) {
 	user, err := getUserByEmail(req.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid email or password."})
+			helper.SendError(c, http.StatusInternalServerError, []string{"Invalid email or password."})
+
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error checking user credentials."})
+			helper.SendError(c, http.StatusInternalServerError, []string{"Error checking user credentials."})
+
 		}
 		return
 	}
@@ -106,19 +114,23 @@ func SignIn(c *gin.Context) {
 	// Compare the provided password with the hashed password in the database
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Invalid email or password."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Invalid email or password."})
+
 		return
 	}
 
 	// Generate JWT token
 	token, err := generateJWT(user.Email, user.ID, user.Role)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Error generating JWT token."})
+		helper.SendError(c, http.StatusInternalServerError, []string{"Error generating token."})
+
 		return
 	}
 
 	// Return success response with JWT token
-	c.JSON(http.StatusOK, SignInResponse{Token: token})
+	helper.SendSuccess(c, http.StatusOK, "User Login successfully", gin.H{
+		"Token": token,
+	})
 }
 
 // Helper: Get user by email from the database

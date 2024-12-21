@@ -24,6 +24,74 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a paginated list of all orders with buyer details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Orders"
+                ],
+                "summary": "Admin View Orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by order status (e.g., pending, completed, cancelled)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of all orders with details",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/admin.PaginatedAdminOrdersResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/product": {
             "post": {
                 "security": [
@@ -188,6 +256,128 @@ const docTemplate = `{
                 }
             }
         },
+        "/order": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new order from the buyer's cart, validate stock, deduct quantities, and clear the cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Orders"
+                ],
+                "summary": "Place Order",
+                "responses": {
+                    "200": {
+                        "description": "Order placed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "order_id": {
+                                                    "type": "integer"
+                                                },
+                                                "total_amount": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: Cart is empty or insufficient stock",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a list of orders placed by the authenticated buyer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Orders"
+                ],
+                "summary": "View Orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of orders with details",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.PaginatedOrdersResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/product/{id}": {
             "get": {
                 "description": "Retrieve detailed information of a specific product by its ID",
@@ -319,22 +509,34 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "User Created successfully",
                         "schema": {
-                            "$ref": "#/definitions/user.CreateUserResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.SignInResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Bad Request: Invalid input/Email is already registered",
                         "schema": {
-                            "$ref": "#/definitions/user.ErrorResponse"
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/user.ErrorResponse"
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     }
                 }
@@ -366,21 +568,33 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "User Login successfully",
                         "schema": {
-                            "$ref": "#/definitions/user.SignInResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.SignInResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Bad Request: Invalid input",
                         "schema": {
-                            "$ref": "#/definitions/user.ErrorResponse"
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/user.ErrorResponse"
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     }
                 }
@@ -407,12 +621,103 @@ const docTemplate = `{
                 }
             }
         },
+        "admin.AdminOrderResponse": {
+            "type": "object",
+            "properties": {
+                "buyer": {
+                    "$ref": "#/definitions/admin.OrderBuyerResponse"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.OrderItemResponse"
+                    }
+                },
+                "order_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "status": {
+                    "type": "string",
+                    "example": "completed"
+                },
+                "total_amount": {
+                    "type": "number",
+                    "example": 75.5
+                }
+            }
+        },
         "admin.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string",
                     "example": "Invalid input"
+                }
+            }
+        },
+        "admin.OrderBuyerResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "buyer@example.com"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "123456789"
+                }
+            }
+        },
+        "admin.OrderItemResponse": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "type": "number",
+                    "example": 25
+                },
+                "product_name": {
+                    "type": "string",
+                    "example": "Product A"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
+        "admin.PaginatedAdminOrdersResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.AdminOrderResponse"
+                    }
+                },
+                "isNext": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "isPrev": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "totalItem": {
+                    "type": "integer",
+                    "example": 50
                 }
             }
         },
@@ -451,7 +756,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "message": {
-                    "description": "List of error messages",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -518,21 +822,80 @@ const docTemplate = `{
                 }
             }
         },
-        "user.CreateUserResponse": {
+        "user.OrderItemResponse": {
             "type": "object",
             "properties": {
-                "token": {
+                "price": {
+                    "type": "number",
+                    "example": 25
+                },
+                "product_name": {
                     "type": "string",
-                    "example": "your_jwt_token"
+                    "example": "Product A"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 2
                 }
             }
         },
-        "user.ErrorResponse": {
+        "user.OrderResponse": {
             "type": "object",
             "properties": {
-                "error": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.OrderItemResponse"
+                    }
+                },
+                "order_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "status": {
                     "type": "string",
-                    "example": "Invalid input"
+                    "example": "completed"
+                },
+                "total_amount": {
+                    "type": "number",
+                    "example": 75.5
+                }
+            }
+        },
+        "user.PaginatedOrdersResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of orders",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.OrderResponse"
+                    }
+                },
+                "isNext": {
+                    "description": "Whether there is a next page",
+                    "type": "boolean",
+                    "example": true
+                },
+                "isPrev": {
+                    "description": "Whether there is a previous page",
+                    "type": "boolean",
+                    "example": false
+                },
+                "limit": {
+                    "description": "Number of items per page",
+                    "type": "integer",
+                    "example": 10
+                },
+                "page": {
+                    "description": "Current page number",
+                    "type": "integer",
+                    "example": 1
+                },
+                "totalItem": {
+                    "description": "Total number of items",
+                    "type": "integer",
+                    "example": 25
                 }
             }
         },
@@ -562,7 +925,7 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
-                    "example": "user@example.com"
+                    "example": "user1@example.com"
                 },
                 "password": {
                     "type": "string",

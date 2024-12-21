@@ -17,8 +17,8 @@ type ErrorResponse struct {
 
 // ErrorDetail defines the structure for detailed error information
 type ErrorDetail struct {
-	Code    int      `json:"code"`    // HTTP status code
-	Message []string `json:"message"` // List of error messages
+	Code    int      `json:"code" ` // HTTP status code
+	Message []string `json:"message"`
 }
 
 // SendSuccess sends a standardized success response

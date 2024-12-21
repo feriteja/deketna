@@ -11,20 +11,12 @@ type CreateUserRequest struct {
 }
 
 type SignInRequest struct {
-	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
+	Email    string `json:"email" binding:"required,email" example:"user1@example.com"`
 	Password string `json:"password" binding:"required,min=6" example:"password123"`
-}
-
-type CreateUserResponse struct {
-	Token string `json:"token" example:"your_jwt_token"`
 }
 
 type SignInResponse struct {
 	Token string `json:"token" example:"your_jwt_token"`
-}
-
-type ErrorResponse struct {
-	Error string `json:"error" example:"Invalid input"`
 }
 
 type User struct {
