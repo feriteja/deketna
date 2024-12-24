@@ -101,3 +101,62 @@ func ViewOrders(c *gin.Context) {
 		"data":      formattedOrders,
 	})
 }
+
+// UpdateOrderStatus updates the status of an order by admin
+// @Summary Update Order Status
+// @Description Admin can update the status of an order (accept, reject, ontheway, finish)
+// @Tags Admin Orders
+// @Accept json
+// @Produce json
+// @Param id path int true "Order ID"
+// @Param status body object{status=string} true "New order status (accept, reject, ontheway, finish)"
+// @Security BearerAuth
+// @Success 200 {object} helper.SuccessResponse{data=object{order_id=uint64,status=string}} "Order status updated successfully"
+// @Failure 400 {object} helper.ErrorResponse "Bad Request: Invalid status or order not found"
+// @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
+// @Router /admin/orders/{id}/status [put]
+func UpdateOrderStatus(c *gin.Context) {
+	// Parse order ID from path
+	orderID := c.Param("id")
+
+	// Parse new status from JSON body
+	var req struct {
+		Status string `json:"status" binding:"required,oneof=accept reject ontheway finish"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{"Invalid status provided"})
+		return
+	}
+
+	// Fetch the order
+	var order models.Order
+	if err := config.DB.First(&order, orderID).Error; err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{"Order not found"})
+		return
+	}
+
+	// Validate allowed status transitions (optional but recommended)
+	validStatuses := map[string]bool{
+		"accept":   true,
+		"reject":   true,
+		"ontheway": true,
+		"finish":   true,
+	}
+	if !validStatuses[req.Status] {
+		helper.SendError(c, http.StatusBadRequest, []string{"Invalid order status"})
+		return
+	}
+
+	// Update order status
+	order.Status = req.Status
+	if err := config.DB.Save(&order).Error; err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to update order status"})
+		return
+	}
+
+	// Return success response
+	helper.SendSuccess(c, http.StatusOK, "Order status updated successfully", gin.H{
+		"order_id": order.ID,
+		"status":   order.Status,
+	})
+}
