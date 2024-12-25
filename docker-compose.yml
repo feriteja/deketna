@@ -1,0 +1,30 @@
+ 
+services:
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: qwerty
+      POSTGRES_DB: deketna
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  app:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - ./.env.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app:cached  # Map local files for live updates
+    command: [ "go", "run", "."]
+    tty: true
+
+volumes:
+  postgres_data:

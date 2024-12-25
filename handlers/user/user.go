@@ -102,7 +102,7 @@ func SignIn(c *gin.Context) {
 	user, err := getUserByEmail(req.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			helper.SendError(c, http.StatusInternalServerError, []string{"Invalid email or password."})
+			helper.SendError(c, http.StatusBadRequest, []string{"Invalid email or password."})
 
 		} else {
 			helper.SendError(c, http.StatusInternalServerError, []string{"Error checking user credentials."})
@@ -114,7 +114,7 @@ func SignIn(c *gin.Context) {
 	// Compare the provided password with the hashed password in the database
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, []string{"Invalid email or password."})
+		helper.SendError(c, http.StatusBadRequest, []string{"Invalid email or password."})
 
 		return
 	}
