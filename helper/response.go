@@ -21,6 +21,21 @@ type ErrorDetail struct {
 	Message []string `json:"message"`
 }
 
+type PaginationMetadata struct {
+	Page       int  `json:"page"`
+	Limit      int  `json:"limit"`
+	TotalItems int  `json:"totalItems"`
+	TotalPages int  `json:"totalPages"`
+	IsNext     bool `json:"isNext"`
+	IsPrev     bool `json:"isPrev"`
+}
+
+type PaginationResponse struct {
+	Message    string             `json:"message"`
+	Data       interface{}        `json:"data"`
+	Pagination PaginationMetadata `json:"pagination"`
+}
+
 // SendSuccess sends a standardized success response
 func SendSuccess(c *gin.Context, statusCode int, message string, data interface{}) {
 	c.JSON(statusCode, SuccessResponse{
@@ -37,4 +52,14 @@ func SendError(c *gin.Context, statusCode int, messages []string) {
 			Message: messages,
 		},
 	})
+}
+
+// SendPagination sends a standardized paginated response
+func SendPagination(c *gin.Context, statusCode int, message string, data interface{}, pagination PaginationMetadata) {
+	c.JSON(statusCode, PaginationResponse{
+		Message:    message,
+		Data:       data,
+		Pagination: pagination,
+	})
+
 }

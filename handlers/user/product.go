@@ -4,73 +4,140 @@ import (
 	"deketna/config"
 	"deketna/helper"
 	"deketna/models"
-	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 )
 
-// GetProducts retrieves a list of products
+// GetProducts retrieves a paginated list of products with seller details
 // @Summary Get Products
-// @Description Retrieve a list of products available for users
-// @Tags Products
+// @Description Retrieve a paginated list of products with seller details
+// @Tags   Product
 // @Accept json
 // @Produce json
-// @Success 200 {object} helper.SuccessResponse{data=[]Product} "Products retrieved successfully"
-// @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of items per page (default: 25)"
+// @Success 200 {object} helper.PaginationResponse{data=[]ProductWithSeller} "List of products with seller details"
+// @Failure 400 {object} helper.ErrorResponse "Invalid query parameters"
 // @Router /products [get]
 func GetProducts(c *gin.Context) {
-	var products []Product // Product is your GORM model struct
+	// Parse pagination parameters
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "25")
 
-	// Fetch all products from the database
-	if err := config.DB.Find(&products).Error; err != nil {
-		helper.SendError(c, http.StatusBadRequest, []string{"Failed to retrieve products", err.Error()})
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 25
+	}
 
+	offset := (page - 1) * limit
+
+	// Fetch products with seller details
+	var products []ProductWithSeller
+	var totalItems int64
+
+	query := config.DB.Table("products").
+		Select(`
+			products.id, 
+			products.name, 
+			products.price, 
+			products.stock, 
+			products.image_url, 
+			users.id AS seller_id, 
+			CASE 
+				WHEN users.id = 1 THEN 'Deketna'
+				ELSE COALESCE(profiles.name, '')
+			END AS seller_name `).
+		Joins("JOIN users ON users.id = products.seller_id").
+		Joins("LEFT JOIN profiles ON profiles.user_id = users.id").
+		Limit(limit).
+		Offset(offset).
+		Scan(&products)
+
+	if query.Error != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve products"})
 		return
 	}
 
-	// Return the products as a JSON response
-	helper.SendSuccess(c, http.StatusOK, "Products retrieved successfully", products)
+	// Get total count for pagination
+	config.DB.Model(&models.Product{}).Count(&totalItems)
+
+	// Build pagination metadata
+	totalPages := (int(totalItems) + limit - 1) / limit
+	pagination := helper.PaginationMetadata{
+		Page:       page,
+		Limit:      limit,
+		TotalItems: int(totalItems),
+		TotalPages: totalPages,
+		IsNext:     page < totalPages,
+		IsPrev:     page > 1,
+	}
+
+	// Send success response
+	helper.SendPagination(c, http.StatusOK, "Products retrieved successfully", products, pagination)
 }
 
-// GetProductDetail retrieves the details of a specific product
+// GetProductDetail retrieves details of a specific product with seller details
 // @Summary Get Product Detail
-// @Description Retrieve detailed information of a specific product by its ID
-// @Tags Products
+// @Description Retrieve details of a specific product with seller information
+// @Tags  Product
 // @Accept json
 // @Produce json
 // @Param id path int true "Product ID"
-// @Success 200 {object} helper.SuccessResponse{data=Product} "Product details"
-// @Failure 400 {object} helper.ErrorResponse "Invalid input data"
+// @Success 200 {object} helper.SuccessResponse{data=ProductWithSeller} "Product details with seller information"
+// @Failure 400 {object} helper.ErrorResponse "Invalid Product ID"
 // @Failure 404 {object} helper.ErrorResponse "Product not found"
-// @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
 // @Router /product/{id} [get]
 func GetProductDetail(c *gin.Context) {
-	// Parse product ID from the URL
-	idParam := c.Param("id")
-	productID, err := strconv.ParseUint(idParam, 10, 64)
+	// Parse product ID from the path
+	productIDStr := c.Param("id")
+	productID, err := strconv.ParseUint(productIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		helper.SendError(c, http.StatusBadRequest, []string{"Invalid product ID"})
+
 		return
 	}
 
-	var product Product // Product is your GORM model struct
+	// Fetch product with seller details using LEFT JOIN
+	var product ProductWithSeller
 
-	// Fetch the product by ID from the database
-	if err := config.DB.First(&product, productID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve product details"})
-		}
+	err = config.DB.Table("products").
+		Select(`
+			products.id, 
+			products.name, 
+			products.price, 
+			products.stock, 
+			products.image_url, 
+			users.id AS seller_id, 
+			CASE 
+				WHEN users.id = 1 THEN 'Deketna'
+				ELSE COALESCE(profiles.name, '')
+			END AS seller_name `).
+		Joins("JOIN users ON users.id = products.seller_id").
+		Joins("LEFT JOIN profiles ON profiles.user_id = users.id").
+		Where("products.id = ?", productID).
+		Scan(&product).Error
+
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve product details"})
 		return
 	}
 
-	// Return the product details as a JSON response
-	c.JSON(http.StatusOK, product)
+	// If no product found
+	if product.ID == 0 {
+		helper.SendError(c, http.StatusNotFound, []string{"Product not found"})
+
+		return
+	}
+
+	// Send success response
+	helper.SendSuccess(c, http.StatusOK, "Product details retrieved successfully", product)
 }
 
 // AddToCartHandler handles adding goods to the cart

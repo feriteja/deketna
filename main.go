@@ -2,6 +2,7 @@ package main
 
 import (
 	"deketna/config"
+	"deketna/middleware"
 	"deketna/router"
 	"log"
 	"os"
@@ -47,6 +48,8 @@ func main() {
 
 	// Set up router
 	r := gin.Default()
+	r.Static("/uploads", "./uploads")
+	r.Use(middleware.CORSMiddleware())
 
 	r.SetTrustedProxies(nil)
 	// Routes

@@ -1,18 +1,5 @@
 basePath: /
 definitions:
-  admin.AddProductRequest:
-    properties:
-      name:
-        type: string
-      price:
-        type: number
-      stock:
-        type: integer
-    required:
-    - name
-    - price
-    - stock
-    type: object
   admin.AdminOrderResponse:
     properties:
       buyer:
@@ -119,6 +106,29 @@ definitions:
         - $ref: '#/definitions/helper.ErrorDetail'
         description: Error details
     type: object
+  helper.PaginationMetadata:
+    properties:
+      isNext:
+        type: boolean
+      isPrev:
+        type: boolean
+      limit:
+        type: integer
+      page:
+        type: integer
+      totalItems:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  helper.PaginationResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      pagination:
+        $ref: '#/definitions/helper.PaginationMetadata'
+    type: object
   helper.SuccessResponse:
     properties:
       data:
@@ -207,14 +217,21 @@ definitions:
         example: 25
         type: integer
     type: object
-  user.Product:
+  user.ProductWithSeller:
     properties:
       id:
         type: integer
+      image_url:
+        type: string
       name:
         type: string
       price:
         type: number
+      seller_id:
+        type: integer
+      seller_name:
+        description: Omitempty for null values
+        type: string
       stock:
         type: integer
     type: object
@@ -346,38 +363,48 @@ paths:
   /admin/product:
     post:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Admin adds a new product
       parameters:
-      - description: Product details
-        in: body
-        name: payload
+      - description: Product Name
+        in: formData
+        name: name
         required: true
-        schema:
-          $ref: '#/definitions/admin.AddProductRequest'
+        type: string
+      - description: Product Price
+        in: formData
+        name: price
+        required: true
+        type: number
+      - description: Product Stock
+        in: formData
+        name: stock
+        required: true
+        type: integer
+      - description: Product Image
+        in: formData
+        name: image
+        required: true
+        type: file
       produces:
       - application/json
       responses:
         "201":
-          description: Product added
+          description: Product
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/helper.SuccessResponse'
         "400":
           description: Validation Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
         "403":
           description: Access forbidden
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/helper.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Add a product
@@ -526,7 +553,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve detailed information of a specific product by its ID
+      description: Retrieve details of a specific product with seller information
       parameters:
       - description: Product ID
         in: path
@@ -537,55 +564,60 @@ paths:
       - application/json
       responses:
         "200":
-          description: Product details
+          description: Product details with seller information
           schema:
             allOf:
             - $ref: '#/definitions/helper.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/user.Product'
+                  $ref: '#/definitions/user.ProductWithSeller'
               type: object
         "400":
-          description: Invalid input data
+          description: Invalid Product ID
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
         "404":
           description: Product not found
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/helper.ErrorResponse'
       summary: Get Product Detail
       tags:
-      - Products
+      - Product
   /products:
     get:
       consumes:
       - application/json
-      description: Retrieve a list of products available for users
+      description: Retrieve a paginated list of products with seller details
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Number of items per page (default: 25)'
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Products retrieved successfully
+          description: List of products with seller details
           schema:
             allOf:
-            - $ref: '#/definitions/helper.SuccessResponse'
+            - $ref: '#/definitions/helper.PaginationResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/user.Product'
+                    $ref: '#/definitions/user.ProductWithSeller'
                   type: array
               type: object
-        "500":
-          description: Internal Server Error
+        "400":
+          description: Invalid query parameters
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
       summary: Get Products
       tags:
-      - Products
+      - Product
   /register:
     post:
       consumes:

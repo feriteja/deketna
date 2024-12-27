@@ -184,7 +184,7 @@ const docTemplate = `{
                 ],
                 "description": "Admin adds a new product",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -195,42 +195,57 @@ const docTemplate = `{
                 "summary": "Add a product",
                 "parameters": [
                     {
-                        "description": "Product details",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/admin.AddProductRequest"
-                        }
+                        "type": "string",
+                        "description": "Product Name",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Product Price",
+                        "name": "price",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product Stock",
+                        "name": "stock",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Product Image",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Product added",
+                        "description": "Product",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/helper.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Validation Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Access forbidden",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     }
                 }
@@ -463,7 +478,7 @@ const docTemplate = `{
         },
         "/product/{id}": {
             "get": {
-                "description": "Retrieve detailed information of a specific product by its ID",
+                "description": "Retrieve details of a specific product with seller information",
                 "consumes": [
                     "application/json"
                 ],
@@ -471,7 +486,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Products"
+                    "Product"
                 ],
                 "summary": "Get Product Detail",
                 "parameters": [
@@ -485,7 +500,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product details",
+                        "description": "Product details with seller information",
                         "schema": {
                             "allOf": [
                                 {
@@ -495,7 +510,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/user.Product"
+                                            "$ref": "#/definitions/user.ProductWithSeller"
                                         }
                                     }
                                 }
@@ -503,7 +518,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid input data",
+                        "description": "Invalid Product ID",
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
@@ -513,19 +528,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/helper.ErrorResponse"
-                        }
                     }
                 }
             }
         },
         "/products": {
             "get": {
-                "description": "Retrieve a list of products available for users",
+                "description": "Retrieve a paginated list of products with seller details",
                 "consumes": [
                     "application/json"
                 ],
@@ -533,16 +542,30 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Products"
+                    "Product"
                 ],
                 "summary": "Get Products",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page (default: 25)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Products retrieved successfully",
+                        "description": "List of products with seller details",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                    "$ref": "#/definitions/helper.PaginationResponse"
                                 },
                                 {
                                     "type": "object",
@@ -550,7 +573,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/user.Product"
+                                                "$ref": "#/definitions/user.ProductWithSeller"
                                             }
                                         }
                                     }
@@ -558,8 +581,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "400": {
+                        "description": "Invalid query parameters",
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
@@ -685,25 +708,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "admin.AddProductRequest": {
-            "type": "object",
-            "required": [
-                "name",
-                "price",
-                "stock"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "stock": {
-                    "type": "integer"
-                }
-            }
-        },
         "admin.AdminOrderResponse": {
             "type": "object",
             "properties": {
@@ -859,6 +863,41 @@ const docTemplate = `{
                 }
             }
         },
+        "helper.PaginationMetadata": {
+            "type": "object",
+            "properties": {
+                "isNext": {
+                    "type": "boolean"
+                },
+                "isPrev": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "totalItems": {
+                    "type": "integer"
+                },
+                "totalPages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "helper.PaginationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/helper.PaginationMetadata"
+                }
+            }
+        },
         "helper.SuccessResponse": {
             "type": "object",
             "properties": {
@@ -982,17 +1021,27 @@ const docTemplate = `{
                 }
             }
         },
-        "user.Product": {
+        "user.ProductWithSeller": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
                 "price": {
                     "type": "number"
+                },
+                "seller_id": {
+                    "type": "integer"
+                },
+                "seller_name": {
+                    "description": "Omitempty for null values",
+                    "type": "string"
                 },
                 "stock": {
                     "type": "integer"

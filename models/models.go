@@ -36,6 +36,7 @@ type Product struct {
 	Stock      int       `json:"stock"`
 	SellerID   uint64    `json:"seller_id"`
 	CategoryID *uint     `json:"category_id,omitempty"`
+	ImageURL   string    `json:"image_url"` // URL or path to the image
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 
