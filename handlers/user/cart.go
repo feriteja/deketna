@@ -71,9 +71,10 @@ func AddToCart(c *gin.Context) {
 	// Return success response
 	// Return success response
 	helper.SendSuccess(c, http.StatusOK, "Product added to cart successfully", gin.H{
-		"cart_id":  cart.ID,
-		"product":  product.Name,
-		"quantity": req.Quantity,
+		"cart_id":      cart.ID,
+		"cart_item_id": cartItem.ID,
+		"product":      product.Name,
+		"quantity":     req.Quantity,
 	})
 }
 
