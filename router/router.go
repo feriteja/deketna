@@ -20,9 +20,13 @@ func InitializeRoutes(r *gin.Engine) {
 
 		userRoutes.Use(middleware.BuyerRoleMiddleware())
 		{
-			userRoutes.POST("/cart/:id", user.AddToCart) // add to cart
-			userRoutes.POST("/order", user.PlaceOrder)   // add to cart
-			userRoutes.GET("/orders", user.ViewOrders)   // add to cart
+			userRoutes.POST("/cart/", user.AddToCart)
+			userRoutes.GET("/cart", user.GetCarts)
+			userRoutes.DELETE("/cart", user.DeleteCart)
+			userRoutes.PUT("/cart", user.UpdateCart)
+
+			userRoutes.POST("/order", user.PlaceOrder)
+			userRoutes.GET("/orders", user.ViewOrders)
 		}
 
 	}

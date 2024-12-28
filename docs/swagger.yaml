@@ -148,6 +148,21 @@ definitions:
     - product_id
     - quantity
     type: object
+  user.CartItemResponse:
+    properties:
+      id:
+        type: integer
+      price:
+        type: number
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      total_price:
+        type: number
+    type: object
   user.CreateUserRequest:
     properties:
       email:
@@ -160,6 +175,13 @@ definitions:
     required:
     - email
     - password
+    type: object
+  user.DeleteCartRequest:
+    properties:
+      cart_item_ids:
+        items:
+          type: integer
+        type: array
     type: object
   user.OrderItemResponse:
     properties:
@@ -253,6 +275,13 @@ definitions:
       token:
         example: your_jwt_token
         type: string
+    type: object
+  user.UpdateCartRequest:
+    properties:
+      cart_item_ids:
+        type: integer
+      quantity:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -440,7 +469,78 @@ paths:
       summary: Sign in a admin
       tags:
       - Admin Auth
-  /cart/{id}:
+  /cart:
+    delete:
+      consumes:
+      - application/json
+      description: Delete one or more items from the user's cart
+      parameters:
+      - description: Cart Item IDs to delete
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/user.DeleteCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cart items deleted successfully
+          schema:
+            $ref: '#/definitions/helper.SuccessResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Failed to delete cart items
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Cart Items
+      tags:
+      - Cart
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all cart items for the logged-in user
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Number of items per page (default: 25)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of cart items
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.PaginationResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/user.CartItemResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Failed to retrieve cart items
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Cart Items
+      tags:
+      - Cart
     post:
       consumes:
       - application/json
@@ -475,7 +575,38 @@ paths:
       - BearerAuth: []
       summary: Add Product to Cart
       tags:
-      - Products
+      - Cart
+    put:
+      consumes:
+      - application/json
+      description: Update the quantity of a specific cart item
+      parameters:
+      - description: Cart item details
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cart item updated successfully
+          schema:
+            $ref: '#/definitions/helper.SuccessResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Failed to update cart item
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Cart Item
+      tags:
+      - Cart
   /order:
     post:
       consumes:
