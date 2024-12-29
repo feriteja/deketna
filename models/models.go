@@ -23,10 +23,11 @@ type Profile struct {
 	Address   string `gorm:"type:text"`
 	Name      string `gorm:"size:255"`
 	UserID    uint   `gorm:"unique;not null"`
+	ImageURL  string `json:"image_url"` // URL or path to the image
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	User User `gorm:"constraint:OnDelete:CASCADE"` // Belongs to User
+	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 type Product struct {

@@ -5,12 +5,15 @@ import (
 	"deketna/helper"
 	"deketna/models"
 	"deketna/utils"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 // @Summary Add a product
@@ -88,4 +91,128 @@ func AddProduct(c *gin.Context) {
 func DeleteProduct(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+}
+
+// GetProducts retrieves a paginated list of products with seller details
+// @Summary Get Products
+// @Description Retrieve a paginated list of products with seller details
+// @Tags   Admin Product
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of items per page (default: 25)"
+// @Param seller_id query int false "id of seller (default: 1)"
+// @Param seller_name query string false "Name of seller (default: Deketna)"
+// @Param product_name query string false "Name of product (default: botol)"
+// @Success 200 {object} helper.PaginationResponse{data=[]GetProductResponse} "List of products with seller details"
+// @Failure 400 {object} helper.ErrorResponse "Invalid query parameters"
+// @Router /admin/products [get]
+func GetProduct(c *gin.Context) {
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "25"))
+
+	sellerIDParam := c.Query("seller_id")
+	var sellerID *uint64
+	if sellerIDParam != "" {
+		id, err := strconv.ParseUint(sellerIDParam, 10, 64)
+		if err == nil {
+			sellerID = &id
+		}
+	}
+
+	sellerName := c.Query("seller_name")
+	var sellerNamePtr *string
+	if sellerName != "" {
+		sellerNamePtr = &sellerName
+	}
+
+	productName := c.Query("product_name")
+	var productNamePtr *string
+	if productName != "" {
+		productNamePtr = &productName
+	}
+
+	products, totalItems, err := GetProductsPaginated(config.DB, page, limit, sellerID, sellerNamePtr, productNamePtr)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
+		return
+	}
+	totalPages := (int(totalItems) + limit - 1) / limit
+	pagination := helper.PaginationMetadata{
+		Page:       page,
+		Limit:      limit,
+		TotalItems: int(totalItems),
+		TotalPages: totalPages,
+		IsNext:     page < totalPages,
+		IsPrev:     page > 1,
+	}
+
+	helper.SendPagination(c, http.StatusOK, "Products retrieved successfully", products, pagination)
+
+}
+
+func GetProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, sellerName *string, productName *string) ([]GetProductResponse, int64, error) {
+	var products []GetProductResponse
+	var totalItems int64
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	query := db.Model(&models.Product{}).
+		Preload("Seller").
+		Preload("Category")
+
+	if sellerID != nil {
+		query = query.Where("products.seller_id = ?", *sellerID)
+	}
+
+	if sellerName != nil && *sellerName != "" {
+		query = query.Joins("JOIN profiles ON profiles.user_id = products.seller_id").
+			Where("LOWER(profiles.name) ILIKE LOWER(?)", "%"+*sellerName+"%")
+	}
+
+	if productName != nil && *productName != "" {
+		query = query.Where("LOWER(name) ILIKE LOWER(?)", "%"+*productName+"%")
+	}
+
+	if err := query.Count(&totalItems).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Limit(limit).Offset(offset).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+
+	userJSON, _ := json.MarshalIndent(products, "", "  ")
+	fmt.Println(string(userJSON))
+
+	// Map to DTO
+	var response = make([]GetProductResponse, len(products))
+
+	for i, product := range products {
+		response[i] = GetProductResponse{
+			ID:        product.ID,
+			Name:      product.Name,
+			Price:     product.Price,
+			Stock:     product.Stock,
+			SellerID:  product.SellerID,
+			ImageURL:  product.ImageURL,
+			CreatedAt: product.CreatedAt,
+			UpdatedAt: product.UpdatedAt,
+			Seller: Profile{
+				ID:       product.Seller.ID,
+				Name:     product.Seller.Name,     // Adjust if `Name` comes from profiles
+				ImageURL: product.Seller.ImageURL, // Profiles image must be handled manually
+			},
+			Category: Category{
+				ID:          product.Category.ID,
+				Name:        product.Category.Name,
+				Description: product.Category.Description,
+			},
+		}
+	}
+
+	return products, totalItems, nil
 }

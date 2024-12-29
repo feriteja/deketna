@@ -39,8 +39,8 @@ import (
 func main() {
 
 	// Load environment variables (optional)
-	if err := LoadEnv(); err != nil {
-		log.Fatalf("Error loading .env file")
+	if err := godotenv.Load(".env.dev"); err != nil {
+		log.Fatalf("Error loading .env.dev file: %v", err)
 	}
 
 	// Connect to database

@@ -251,6 +251,87 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/products": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a paginated list of products with seller details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Product"
+                ],
+                "summary": "Get Products",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page (default: 25)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id of seller (default: 1)",
+                        "name": "seller_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name of seller (default: Deketna)",
+                        "name": "seller_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name of product (default: botol)",
+                        "name": "product_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of products with seller details",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.PaginationResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/admin.GetProductResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid query parameters",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/signin": {
             "post": {
                 "description": "Authenticates as admin  with email and password",
@@ -899,12 +980,66 @@ const docTemplate = `{
                 }
             }
         },
+        "admin.Category": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "admin.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string",
                     "example": "Invalid input"
+                }
+            }
+        },
+        "admin.GetProductResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/admin.Category"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "image_url": {
+                    "description": "URL or path to the image",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "seller": {
+                    "$ref": "#/definitions/admin.ProfileSeller"
+                },
+                "seller_id": {
+                    "type": "integer"
+                },
+                "stock": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -970,6 +1105,20 @@ const docTemplate = `{
                 "totalItem": {
                     "type": "integer",
                     "example": 50
+                }
+            }
+        },
+        "admin.ProfileSeller": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
@@ -1277,7 +1426,7 @@ const docTemplate = `{
         "user.UpdateCartRequest": {
             "type": "object",
             "properties": {
-                "cart_item_ids": {
+                "cart_item_id": {
                     "type": "integer"
                 },
                 "quantity": {
