@@ -216,6 +216,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "integer",
+                        "description": "Product Category",
+                        "name": "CategoryID",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "Product Image",
                         "name": "image",
@@ -225,6 +231,144 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
+                        "description": "Product",
+                        "schema": {
+                            "$ref": "#/definitions/helper.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation Error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/product/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin edit a product",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Product"
+                ],
+                "summary": "Edit a product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Product Name",
+                        "name": "name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Product Price",
+                        "name": "price",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product Stock",
+                        "name": "stock",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product Category",
+                        "name": "CategoryID",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Product Image",
+                        "name": "image",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product",
+                        "schema": {
+                            "$ref": "#/definitions/helper.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation Error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin delete a product",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Product"
+                ],
+                "summary": "Delete a product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
                         "description": "Product",
                         "schema": {
                             "$ref": "#/definitions/helper.SuccessResponse"
@@ -1030,7 +1174,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "seller": {
-                    "$ref": "#/definitions/admin.ProfileSeller"
+                    "$ref": "#/definitions/admin.Profile"
                 },
                 "seller_id": {
                     "type": "integer"
@@ -1108,7 +1252,7 @@ const docTemplate = `{
                 }
             }
         },
-        "admin.ProfileSeller": {
+        "admin.Profile": {
             "type": "object",
             "properties": {
                 "id": {

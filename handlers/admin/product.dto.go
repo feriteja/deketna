@@ -3,9 +3,10 @@ package admin
 import "time"
 
 type AddProductRequest struct {
-	Name  string  `form:"name" binding:"required"`
-	Price float64 `form:"price" binding:"required,gt=0"`
-	Stock int     `form:"stock" binding:"required,gt=0"`
+	Name       string  `form:"name" binding:"required"`
+	Price      float64 `form:"price" binding:"required,gt=0"`
+	Stock      int     `form:"stock" binding:"required,gt=0"`
+	CategoryID int     `form:"category_id" binding:"gt=0"`
 }
 
 type GetProductResponse struct {
@@ -33,4 +34,12 @@ type Category struct {
 	ID          uint   `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type ProductEditRequest struct {
+	Name       string   `json:"name"`
+	Price      *float64 `json:"price,omitempty"`
+	Stock      *int     `json:"stock,omitempty"`
+	CategoryID *uint    `json:"category_id,omitempty"`
+	ImageURL   *string  `json:"image_url,omitempty"`
 }

@@ -52,7 +52,7 @@ definitions:
       price:
         type: number
       seller:
-        $ref: '#/definitions/admin.ProfileSeller'
+        $ref: '#/definitions/admin.Profile'
       seller_id:
         type: integer
       stock:
@@ -106,7 +106,7 @@ definitions:
         example: 50
         type: integer
     type: object
-  admin.ProfileSeller:
+  admin.Profile:
     properties:
       id:
         type: integer
@@ -455,6 +455,10 @@ paths:
         name: stock
         required: true
         type: integer
+      - description: Product Category
+        in: formData
+        name: CategoryID
+        type: integer
       - description: Product Image
         in: formData
         name: image
@@ -482,6 +486,95 @@ paths:
       security:
       - BearerAuth: []
       summary: Add a product
+      tags:
+      - Admin Product
+  /admin/product/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Admin delete a product
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            $ref: '#/definitions/helper.SuccessResponse'
+        "400":
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Access forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a product
+      tags:
+      - Admin Product
+    put:
+      consumes:
+      - multipart/form-data
+      description: Admin edit a product
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product Name
+        in: formData
+        name: name
+        type: string
+      - description: Product Price
+        in: formData
+        name: price
+        type: number
+      - description: Product Stock
+        in: formData
+        name: stock
+        type: integer
+      - description: Product Category
+        in: formData
+        name: CategoryID
+        type: integer
+      - description: Product Image
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            $ref: '#/definitions/helper.SuccessResponse'
+        "400":
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Access forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Edit a product
       tags:
       - Admin Product
   /admin/products:
