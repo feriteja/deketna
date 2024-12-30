@@ -197,6 +197,8 @@ definitions:
     properties:
       id:
         type: integer
+      image_url:
+        type: string
       price:
         type: number
       product_id:

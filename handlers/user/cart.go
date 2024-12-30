@@ -117,7 +117,7 @@ func GetCarts(c *gin.Context) {
 			cart_items.id,
 			cart_items.product_id,
 			products.name AS product_name,
-			products.price,
+			products.price, products.image_url,
 			cart_items.quantity,
 			(products.price * cart_items.quantity) AS total_price`).
 		Joins("JOIN carts ON carts.id = cart_items.cart_id").

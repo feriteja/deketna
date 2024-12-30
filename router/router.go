@@ -36,11 +36,13 @@ func InitializeRoutes(r *gin.Engine) {
 	adminRoutes.Use(middleware.AdminRoleMiddleware()) // Apply admin middleware to all routes in this group
 	{
 		adminRoutes.POST("/signin", admin.SignIn)
+
 		adminRoutes.GET("/products", admin.GetProduct)
 		adminRoutes.GET("/product/:id", admin.GetProductDetail)
 		adminRoutes.POST("/product", admin.AddProduct)
 		adminRoutes.DELETE("/product/:id", admin.AdminDeleteProduct)
 		adminRoutes.PUT("/product/:id", admin.AdminEditProduct)
+
 		adminRoutes.GET("/orders", admin.ViewOrders)
 		adminRoutes.PUT("/orders/:id/status", admin.UpdateOrderStatus)
 

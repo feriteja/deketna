@@ -5,6 +5,7 @@ type CartItemResponse struct {
 	ID          uint64  `json:"id"`
 	ProductID   uint64  `json:"product_id"`
 	ProductName string  `json:"product_name"`
+	ImageURL    string  `json:"image_url"`
 	Price       float64 `json:"price"`
 	Quantity    int     `json:"quantity"`
 	TotalPrice  float64 `json:"total_price"`
