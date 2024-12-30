@@ -1,5 +1,10 @@
 package user
 
+type OrderItemRequest struct {
+	ProductID uint64 `json:"product_id" binding:"required"`
+	Quantity  int    `json:"quantity" binding:"required,gt=0"`
+}
+
 type OrderItemResponse struct {
 	ProductName string  `json:"product_name" example:"Product A"`
 	Quantity    int     `json:"quantity" example:"2"`

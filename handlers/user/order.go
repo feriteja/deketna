@@ -4,104 +4,116 @@ import (
 	"deketna/config"
 	"deketna/helper"
 	"deketna/models"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
-// PlaceOrder creates a new order for the authenticated buyer
+// PlaceOrder creates a new order for selected products
 // @Summary Place Order
-// @Description Create a new order from the buyer's cart, validate stock, deduct quantities, and clear the cart
+// @Description Create a new order with selected products, validate stock, deduct quantities
 // @Tags User Orders
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param order body []OrderItemRequest true "List of products and quantities"
 // @Success 200 {object} helper.SuccessResponse{data=object{order_id=uint64,total_amount=float64}} "Order placed successfully"
-// @Failure 400 {object} helper.ErrorResponse "Bad Request: Cart is empty or insufficient stock"
+// @Failure 400 {object} helper.ErrorResponse "Validation Error"
 // @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
 // @Router /order [post]
 func PlaceOrder(c *gin.Context) {
 	// Step 1: Get Buyer Info
 	claims := c.MustGet("claims").(jwt.MapClaims)
-
 	buyerID := uint64(claims["userid"].(float64)) // Extract buyer ID
 
-	var cart models.Cart
-	if err := config.DB.Where("buyer_id = ?", buyerID).Find(&cart).Error; err != nil {
-		helper.SendError(c, http.StatusBadRequest, []string{"Cart is empty"})
+	// Step 2: Parse and Validate Input
+	var orderItems []OrderItemRequest
+	if err := c.ShouldBindJSON(&orderItems); err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{"Invalid input: " + err.Error()})
 		return
 	}
 
-	// Step 2: Get Cart Items
-	var cartItems []models.CartItem
-	if err := config.DB.Where("cart_id = ?", cart.ID).Find(&cartItems).Error; err != nil || len(cartItems) == 0 {
-		helper.SendError(c, http.StatusBadRequest, []string{"Cart is empty"})
+	if len(orderItems) == 0 {
+		helper.SendError(c, http.StatusBadRequest, []string{"No products selected for the order"})
 		return
 	}
 
-	// Step 3: Validate Stock
-	var totalAmount float64
-	var insufficientStock []string
-	for _, item := range cartItems {
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err != nil {
-			insufficientStock = append(insufficientStock, "Product not found: "+strconv.FormatUint(item.ProductID, 10))
-			continue
-		}
-		if product.Stock < item.Quantity {
-			insufficientStock = append(insufficientStock, "Insufficient stock for product: "+product.Name)
-			continue
-		}
-		totalAmount += float64(item.Quantity) * product.Price
-	}
+	// Step 3: Begin Database Transaction
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+		var totalAmount float64
+		var validOrderItems []models.OrderItem
 
-	if len(insufficientStock) > 0 {
-		helper.SendError(c, http.StatusBadRequest, insufficientStock)
+		var insufficientStock []string
+
+		for _, item := range orderItems {
+			var product models.Product
+			if err := tx.Set("gorm:query_option", "FOR UPDATE").
+				First(&product, item.ProductID).Error; err != nil {
+				insufficientStock = append(insufficientStock, fmt.Sprintf("product not found: %d", item.ProductID))
+				continue
+			}
+
+			// Check stock availability
+			if product.Stock < item.Quantity {
+				insufficientStock = append(insufficientStock, fmt.Sprintf("insufficient stock for product: %s", product.Name))
+				continue
+			}
+
+			totalAmount += float64(item.Quantity) * product.Price
+			validOrderItems = append(validOrderItems, models.OrderItem{
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+				Price:     product.Price,
+			})
+		}
+
+		// If there are any stock errors, return them
+		if len(insufficientStock) > 0 {
+			return errors.New(strings.Join(insufficientStock, "; "))
+		}
+
+		// Create Order
+		order := models.Order{
+			BuyerID:     buyerID,
+			TotalAmount: totalAmount,
+			Status:      "pending",
+		}
+		if err := tx.Create(&order).Error; err != nil {
+			return fmt.Errorf("failed to create order: %v", err)
+		}
+
+		// Create Order Items and Deduct Stock
+		for _, item := range validOrderItems {
+			item.OrderID = order.ID
+			if err := tx.Create(&item).Error; err != nil {
+				return fmt.Errorf("failed to create order item: %v", err)
+			}
+
+			// Deduct stock
+			if err := tx.Model(&models.Product{}).
+				Where("id = ?", item.ProductID).
+				UpdateColumn("stock", gorm.Expr("stock - ?", item.Quantity)).Error; err != nil {
+				return fmt.Errorf("failed to deduct stock for product ID: %d", item.ProductID)
+			}
+		}
+
+		return nil // Commit transaction if no errors
+	})
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{err.Error()})
 		return
 	}
 
-	// Step 4: Create Order
-	order := models.Order{
-		BuyerID:     buyerID,
-		TotalAmount: totalAmount,
-		Status:      "pending",
-	}
-	if err := config.DB.Create(&order).Error; err != nil {
-		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to create order"})
-		return
-	}
-
-	// Step 5: Create Order Items and Deduct Stock
-	for _, item := range cartItems {
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err != nil {
-			insufficientStock = append(insufficientStock, "Product not found: "+strconv.FormatUint(item.ProductID, 10))
-			continue
-		}
-		// Create Order Item
-		orderItem := models.OrderItem{
-			OrderID:   order.ID,
-			ProductID: item.ProductID,
-			Quantity:  item.Quantity,
-			Price:     float64(item.Quantity) * product.Price,
-		}
-		config.DB.Create(&orderItem)
-
-		// Deduct stock
-		config.DB.Model(&models.Product{}).Where("id = ?", item.ProductID).UpdateColumn("stock", gorm.Expr("stock - ?", item.Quantity))
-	}
-
-	// Step 6: Clear the Cart
-	config.DB.Where("cart_id = ?", buyerID).Delete(&models.CartItem{})
-
-	// Step 7: Return Success Response
+	// Success Response
 	helper.SendSuccess(c, http.StatusOK, "Order placed successfully", gin.H{
-		"order_id":     order.ID,
-		"total_amount": totalAmount,
+		"message": "Order placed successfully",
 	})
 }
 

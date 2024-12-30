@@ -230,6 +230,16 @@ definitions:
           type: integer
         type: array
     type: object
+  user.OrderItemRequest:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    required:
+    - product_id
+    - quantity
+    type: object
   user.OrderItemResponse:
     properties:
       price:
@@ -832,8 +842,17 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new order from the buyer's cart, validate stock, deduct
-        quantities, and clear the cart
+      description: Create a new order with selected products, validate stock, deduct
+        quantities
+      parameters:
+      - description: List of products and quantities
+        in: body
+        name: order
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/user.OrderItemRequest'
+          type: array
       produces:
       - application/json
       responses:
@@ -852,7 +871,7 @@ paths:
                   type: object
               type: object
         "400":
-          description: 'Bad Request: Cart is empty or insufficient stock'
+          description: Validation Error
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
         "500":

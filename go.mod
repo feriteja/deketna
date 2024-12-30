@@ -6,19 +6,17 @@ toolchain go1.22.10
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/go-resty/resty/v2 v2.16.2
 	github.com/joho/godotenv v1.5.1
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.4
+	golang.org/x/time v0.8.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
 
-require (
-	github.com/go-resty/resty/v2 v2.16.2 // indirect
-	golang.org/x/time v0.8.0 // indirect
-)
+require github.com/jackc/pgx/v5 v5.7.1 // indirect
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -56,7 +54,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.12.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/crypto v0.31.0
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect

@@ -805,7 +805,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new order from the buyer's cart, validate stock, deduct quantities, and clear the cart",
+                "description": "Create a new order with selected products, validate stock, deduct quantities",
                 "consumes": [
                     "application/json"
                 ],
@@ -816,6 +816,20 @@ const docTemplate = `{
                     "User Orders"
                 ],
                 "summary": "Place Order",
+                "parameters": [
+                    {
+                        "description": "List of products and quantities",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.OrderItemRequest"
+                            }
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Order placed successfully",
@@ -844,7 +858,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request: Cart is empty or insufficient stock",
+                        "description": "Validation Error",
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
@@ -1490,6 +1504,21 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "user.OrderItemRequest": {
+            "type": "object",
+            "required": [
+                "product_id",
+                "quantity"
+            ],
+            "properties": {
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
                 }
             }
         },
