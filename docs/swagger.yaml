@@ -457,7 +457,8 @@ paths:
         type: integer
       - description: Product Category
         in: formData
-        name: CategoryID
+        name: category_id
+        required: true
         type: integer
       - description: Product Image
         in: formData
@@ -578,7 +579,7 @@ paths:
         type: integer
       - description: Product Category
         in: formData
-        name: CategoryID
+        name: category_id
         type: integer
       - description: Product Image
         in: formData

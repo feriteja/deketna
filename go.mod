@@ -15,7 +15,10 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-require github.com/go-resty/resty/v2 v2.16.2 // indirect
+require (
+	github.com/go-resty/resty/v2 v2.16.2 // indirect
+	golang.org/x/time v0.8.0 // indirect
+)
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

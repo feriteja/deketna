@@ -218,8 +218,9 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Product Category",
-                        "name": "CategoryID",
-                        "in": "formData"
+                        "name": "category_id",
+                        "in": "formData",
+                        "required": true
                     },
                     {
                         "type": "file",
@@ -357,7 +358,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Product Category",
-                        "name": "CategoryID",
+                        "name": "category_id",
                         "in": "formData"
                     },
                     {

@@ -50,6 +50,7 @@ func main() {
 	r := gin.Default()
 	r.Static("/uploads", "./uploads")
 	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.GlobalRateLimiter())
 
 	r.SetTrustedProxies(nil)
 	// Routes

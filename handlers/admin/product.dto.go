@@ -1,12 +1,16 @@
 package admin
 
-import "time"
+import (
+	"mime/multipart"
+	"time"
+)
 
 type AddProductRequest struct {
-	Name       string  `form:"name" binding:"required"`
-	Price      float64 `form:"price" binding:"required,gt=0"`
-	Stock      int     `form:"stock" binding:"required,gt=0"`
-	CategoryID int     `form:"category_id" binding:"gt=0"`
+	Name       string                `form:"name" binding:"required"`
+	Price      float64               `form:"price" binding:"required,gt=0"`
+	Stock      int                   `form:"stock" binding:"required,gt=0"`
+	CategoryID int                   `form:"category_id" binding:"required, gt=0"`
+	Image      *multipart.FileHeader `form:"image" binding:"required"`
 }
 
 type GetProductResponse struct {
