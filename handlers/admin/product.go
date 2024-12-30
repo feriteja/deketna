@@ -171,6 +171,34 @@ func GetProduct(c *gin.Context) {
 
 }
 
+// GetProducts retrieves a detail of product with seller
+// @Summary Get Product Detail
+// @Description Retrieve a detail of products with seller
+// @Tags   Admin Product
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Order ID"
+// @Success 200 {object} helper.SuccessResponse{data=GetProductResponse} "List of products with seller details"
+// @Failure 400 {object} helper.ErrorResponse "Invalid query parameters"
+// @Router /admin/product/{id} [get]
+func GetProductDetail(c *gin.Context) {
+	productId, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+
+	product, err := _getProductDetail(config.DB, productId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "Products retrieved successfully", product)
+
+}
+
 // @Summary Edit a product
 // @Description Admin edit a product
 // @Tags Admin Product
@@ -334,6 +362,46 @@ func _getProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, selle
 	}
 
 	return products, totalItems, nil
+}
+func _getProductDetail(db *gorm.DB, productId uint64) (*GetProductResponse, error) {
+
+	var product GetProductResponse
+
+	query := db.Model(&models.Product{}).
+		Preload("Seller").
+		Preload("Category")
+
+	if err := query.First(&product, productId).Error; err != nil {
+		return nil, err
+	}
+
+	userJSON, _ := json.MarshalIndent(product, "", "  ")
+	fmt.Println(string(userJSON))
+
+	// Map to DTO
+
+	response := GetProductResponse{
+		ID:        product.ID,
+		Name:      product.Name,
+		Price:     product.Price,
+		Stock:     product.Stock,
+		SellerID:  product.SellerID,
+		ImageURL:  product.ImageURL,
+		CreatedAt: product.CreatedAt,
+		UpdatedAt: product.UpdatedAt,
+		Seller: Profile{
+			ID:       product.Seller.ID,
+			Name:     product.Seller.Name,     // Adjust if `Name` comes from profiles
+			ImageURL: product.Seller.ImageURL, // Profiles image must be handled manually
+		},
+		Category: Category{
+			ID:          product.Category.ID,
+			Name:        product.Category.Name,
+			Description: product.Category.Description,
+		},
+	}
+
+	return &response, nil
 }
 
 func _editProduct(db *gorm.DB, id uint64, req ProductEditRequest) (*models.Product, error) {
