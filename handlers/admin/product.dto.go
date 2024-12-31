@@ -2,7 +2,6 @@ package admin
 
 import (
 	"mime/multipart"
-	"time"
 )
 
 type AddProductRequest struct {
@@ -14,18 +13,22 @@ type AddProductRequest struct {
 }
 
 type GetProductResponse struct {
-	ID         uint64    `json:"id" example:"1"`
-	Name       string    `json:"name"`
-	Price      float64   `json:"price"`
-	Stock      int       `json:"stock"`
-	SellerID   uint64    `json:"seller_id"`
-	CategoryID *uint     `json:"category_id,omitempty"`
-	ImageURL   string    `json:"image_url"` // URL or path to the image
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         uint64  `json:"id" example:"1"`
+	Name       string  `json:"name"`
+	Price      float64 `json:"price"`
+	Stock      int     `json:"stock"`
+	SellerID   uint64  `json:"seller_id"`
+	CategoryID *uint   `json:"category_id,omitempty"`
+	ImageURL   string  `json:"image_url"`  // URL or path to the image
+	CreatedAt  string  `json:"created_at"` // Changed to string
+	UpdatedAt  string  `json:"updated_at"` // Changed to string
+}
 
-	Seller   Profile  `json:"seller"`
-	Category Category `json:"category"`
+// Embed GetProductResponse for shared fields
+type GetProductResponseComplete struct {
+	GetProductResponse          // Embeds the common fields
+	Seller             Profile  `json:"seller"`
+	Category           Category `json:"category"`
 }
 
 type Profile struct {

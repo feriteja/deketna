@@ -44,18 +44,20 @@ type Product struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 
-	Seller   User     `gorm:"foreignKey:SellerID;constraint:OnDelete:CASCADE"`
-	Category Category `gorm:"foreignKey:CategoryID"`
+	// Relationships
+	Seller   User      `gorm:"foreignKey:SellerID;constraint:OnDelete:CASCADE" json:"seller"`
+	Category *Category `gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL" json:"category"`
 }
 
 type Category struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `gorm:"size:255;unique;not null"`
-	Description string `gorm:"type:text"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Name        string    `gorm:"size:255;unique;not null" json:"name"`
+	Description string    `gorm:"type:text" json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 
-	Products []Product `gorm:"foreignKey:CategoryID"` // One-to-many with Product
+	// One-to-many relationship
+	Products []Product `gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL" json:"products"`
 }
 
 type AuditLog struct {

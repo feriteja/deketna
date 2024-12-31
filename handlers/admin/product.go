@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -123,7 +124,7 @@ func AddProduct(c *gin.Context) {
 // @Param seller_id query int false "id of seller (default: 1)"
 // @Param seller_name query string false "Name of seller (default: Deketna)"
 // @Param product_name query string false "Name of product (default: botol)"
-// @Success 200 {object} helper.PaginationResponse{data=[]GetProductResponse} "List of products with seller details"
+// @Success 200 {object} helper.PaginationResponse{data=[]GetProductResponseComplete} "List of products with seller details"
 // @Failure 400 {object} helper.ErrorResponse "Invalid query parameters"
 // @Router /admin/products [get]
 func GetProduct(c *gin.Context) {
@@ -179,7 +180,7 @@ func GetProduct(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Order ID"
-// @Success 200 {object} helper.SuccessResponse{data=GetProductResponse} "List of products with seller details"
+// @Success 200 {object} helper.SuccessResponse{data=GetProductResponseComplete} "List of products with seller details"
 // @Failure 400 {object} helper.ErrorResponse "Invalid query parameters"
 // @Router /admin/product/{id} [get]
 func GetProductDetail(c *gin.Context) {
@@ -300,8 +301,8 @@ func AdminDeleteProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
 }
 
-func _getProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, sellerName *string, productName *string) ([]GetProductResponse, int64, error) {
-	var products []GetProductResponse
+func _getProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, sellerName *string, productName *string) ([]GetProductResponseComplete, int64, error) {
+	var products []GetProductResponseComplete
 	var totalItems int64
 
 	// Calculate offset
@@ -336,18 +337,20 @@ func _getProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, selle
 	fmt.Println(string(userJSON))
 
 	// Map to DTO
-	var response = make([]GetProductResponse, len(products))
+	var response = make([]GetProductResponseComplete, len(products))
 
 	for i, product := range products {
-		response[i] = GetProductResponse{
-			ID:        product.ID,
-			Name:      product.Name,
-			Price:     product.Price,
-			Stock:     product.Stock,
-			SellerID:  product.SellerID,
-			ImageURL:  product.ImageURL,
-			CreatedAt: product.CreatedAt,
-			UpdatedAt: product.UpdatedAt,
+		response[i] = GetProductResponseComplete{
+			GetProductResponse: GetProductResponse{
+				ID:        product.ID,
+				Name:      product.Name,
+				Price:     product.Price,
+				Stock:     product.Stock,
+				SellerID:  product.SellerID,
+				ImageURL:  product.ImageURL,
+				CreatedAt: product.CreatedAt,
+				UpdatedAt: product.UpdatedAt,
+			},
 			Seller: Profile{
 				ID:       product.Seller.ID,
 				Name:     product.Seller.Name,     // Adjust if `Name` comes from profiles
@@ -363,9 +366,9 @@ func _getProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, selle
 
 	return products, totalItems, nil
 }
-func _getProductDetail(db *gorm.DB, productId uint64) (*GetProductResponse, error) {
+func _getProductDetail(db *gorm.DB, productId uint64) (*GetProductResponseComplete, error) {
 
-	var product GetProductResponse
+	var product GetProductResponseComplete
 
 	query := db.Model(&models.Product{}).
 		Preload("Seller").
@@ -380,15 +383,17 @@ func _getProductDetail(db *gorm.DB, productId uint64) (*GetProductResponse, erro
 
 	// Map to DTO
 
-	response := GetProductResponse{
-		ID:        product.ID,
-		Name:      product.Name,
-		Price:     product.Price,
-		Stock:     product.Stock,
-		SellerID:  product.SellerID,
-		ImageURL:  product.ImageURL,
-		CreatedAt: product.CreatedAt,
-		UpdatedAt: product.UpdatedAt,
+	response := GetProductResponseComplete{
+		GetProductResponse: GetProductResponse{
+			ID:        product.ID,
+			Name:      product.Name,
+			Price:     product.Price,
+			Stock:     product.Stock,
+			SellerID:  product.SellerID,
+			ImageURL:  product.ImageURL,
+			CreatedAt: product.CreatedAt,
+			UpdatedAt: product.UpdatedAt,
+		},
 		Seller: Profile{
 			ID:       product.Seller.ID,
 			Name:     product.Seller.Name,     // Adjust if `Name` comes from profiles
@@ -404,11 +409,11 @@ func _getProductDetail(db *gorm.DB, productId uint64) (*GetProductResponse, erro
 	return &response, nil
 }
 
-func _editProduct(db *gorm.DB, id uint64, req ProductEditRequest) (*models.Product, error) {
+func _editProduct(db *gorm.DB, id uint64, req ProductEditRequest) (*GetProductResponse, error) {
 	var product models.Product
 
 	// Find product by ID
-	if err := db.First(&product, id).Error; err != nil {
+	if err := db.Omit("Seller", "Category").First(&product, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -428,11 +433,24 @@ func _editProduct(db *gorm.DB, id uint64, req ProductEditRequest) (*models.Produ
 		product.ImageURL = *req.ImageURL
 	}
 
-	if err := db.Save(&product).Error; err != nil {
+	if err := db.Omit("Seller", "Category").Save(&product).Error; err != nil {
 		return nil, err
 	}
 
-	return &product, nil
+	// Map to DTO
+	response := GetProductResponse{
+		ID:         product.ID,
+		Name:       product.Name,
+		Price:      product.Price,
+		Stock:      product.Stock,
+		SellerID:   product.SellerID,
+		CategoryID: product.CategoryID,
+		ImageURL:   product.ImageURL,
+		CreatedAt:  product.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:  product.UpdatedAt.Format(time.RFC3339),
+	}
+
+	return &response, nil
 }
 
 func _deleteProduct(db *gorm.DB, id uint64) error {
