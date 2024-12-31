@@ -240,7 +240,7 @@ func AdminEditProduct(c *gin.Context) {
 		}
 	}
 
-	if categoryID := c.PostForm("CategoryID"); categoryID != "" {
+	if categoryID := c.PostForm("category_id"); categoryID != "" {
 		if cid, err := strconv.ParseUint(categoryID, 10, 64); err == nil {
 			cidUint := uint(cid)
 			req.CategoryID = &cidUint
