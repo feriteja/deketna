@@ -11,27 +11,33 @@ import (
 // InitializeRoutes sets up routes for the application
 func InitializeRoutes(r *gin.Engine) {
 	// User Routes
-	userRoutes := r.Group("/")
+	publicRoutes := r.Group("/")
 	{
-		userRoutes.POST("/register", user.CreateUser)         // User registration
-		userRoutes.POST("/signin", user.SignIn)               // User login
-		userRoutes.GET("/products", user.GetProducts)         // Get list of products
-		userRoutes.GET("/product/:id", user.GetProductDetail) // Get detail of products
+		publicRoutes.POST("/register", user.CreateUser)         // User registration
+		publicRoutes.POST("/signin", user.SignIn)               // User login
+		publicRoutes.GET("/products", user.GetProducts)         // Get list of products
+		publicRoutes.GET("/product/:id", user.GetProductDetail) // Get product details
+	}
 
-		userRoutes.Use(middleware.BuyerRoleMiddleware())
-		{
-			userRoutes.POST("/cart", user.AddToCart)
-			userRoutes.GET("/cart", user.GetCarts)
-			userRoutes.DELETE("/cart", user.DeleteCart)
-			userRoutes.PUT("/cart", user.UpdateCart)
+	// Authenticated Routes (SignInMiddleware)
+	authRoutes := r.Group("/")
+	authRoutes.Use(middleware.SignInMiddleware()) // Ensure user is authenticated
+	{
+		authRoutes.GET("/profile", user.GetUserProfile)
+		authRoutes.PUT("/profile", user.EditUserProfile)
+	}
 
-			userRoutes.POST("/order", user.PlaceOrder)
-			userRoutes.GET("/orders", user.ViewOrders)
+	// Buyer Routes (SignInMiddleware + BuyerRoleMiddleware)
+	buyerRoutes := r.Group("/")
+	buyerRoutes.Use(middleware.BuyerRoleMiddleware()) // User must have buyer role
+	{
+		buyerRoutes.POST("/cart", user.AddToCart)
+		buyerRoutes.GET("/cart", user.GetCarts)
+		buyerRoutes.DELETE("/cart", user.DeleteCart)
+		buyerRoutes.PUT("/cart", user.UpdateCart)
 
-			userRoutes.GET("/profile", user.GetUserProfile)
-			userRoutes.PUT("/profile", user.EditUserProfile)
-		}
-
+		buyerRoutes.POST("/order", user.PlaceOrder)
+		buyerRoutes.GET("/orders", user.ViewOrders)
 	}
 
 	// Admin Routes
