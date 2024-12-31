@@ -27,6 +27,9 @@ func InitializeRoutes(r *gin.Engine) {
 
 			userRoutes.POST("/order", user.PlaceOrder)
 			userRoutes.GET("/orders", user.ViewOrders)
+
+			userRoutes.GET("/profile", user.GetUserProfile)
+			userRoutes.PUT("/profile", user.EditUserProfile)
 		}
 
 	}

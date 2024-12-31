@@ -16,6 +16,8 @@ type User struct {
 
 	Products []Product `gorm:"foreignKey:SellerID"` // One-to-many with Product
 	Orders   []Order   `gorm:"foreignKey:BuyerID"`  // One-to-many with Transaction
+
+	Profile Profile `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 type Profile struct {
@@ -27,7 +29,8 @@ type Profile struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	// Reference User as a pointer to avoid cyclic dependency
+	User *User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 type Product struct {

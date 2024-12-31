@@ -230,6 +230,34 @@ definitions:
           type: integer
         type: array
     type: object
+  user.EditProfileRequest:
+    properties:
+      address:
+        maxLength: 255
+        type: string
+      image_url:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+    type: object
+  user.EditProfileResponse:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
   user.OrderItemRequest:
     properties:
       product_id:
@@ -314,6 +342,25 @@ definitions:
       stock:
         type: integer
     type: object
+  user.ProfileResponse:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/user.UserResponse'
+      user_id:
+        type: integer
+    type: object
   user.SignInRequest:
     properties:
       email:
@@ -339,6 +386,23 @@ definitions:
         type: integer
       quantity:
         type: integer
+    type: object
+  user.UserResponse:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      phone:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -989,6 +1053,76 @@ paths:
       summary: Get Products
       tags:
       - Product
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.ProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get User Profile
+      tags:
+      - User Profile
+    put:
+      consumes:
+      - application/json
+      description: Update the profile details of the currently authenticated user
+      parameters:
+      - description: Profile data to update
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/user.EditProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.EditProfileResponse'
+              type: object
+        "400":
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Edit User Profile
+      tags:
+      - User Profile
   /register:
     post:
       consumes:

@@ -1,12 +1,14 @@
 package user
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"time"
 
 	"deketna/config"
 	"deketna/helper"
+	"deketna/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -39,7 +41,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// Check if email already exists
-	if isEmailTaken(req.Email) {
+	if _isEmailTaken(req.Email) {
 		helper.SendError(c, http.StatusInternalServerError, []string{"Email is already registered."})
 
 		return
@@ -53,19 +55,39 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// Store user in the database
-	user := User{
+	user := models.User{
 		Email:    req.Email,
 		Password: string(hashedPassword),
 		Role:     "buyer", // Default role
 	}
-	if err := createUser(&user); err != nil {
-		helper.SendError(c, http.StatusInternalServerError, []string{"Error creating user in database."})
 
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		// Step 1: Create User
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+
+		// Step 2: Create Empty Profile Linked to User
+		profile := models.Profile{
+			UserID:   user.ID,
+			Name:     "",
+			ImageURL: "",
+		}
+
+		if err := tx.Create(&profile).Error; err != nil {
+			return errors.New("failed to create user profile")
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{err.Error()})
 		return
 	}
 
 	// Generate JWT token
-	token, err := generateJWT(user.Email, user.ID, user.Role)
+	token, err := _generateJWT(user.Email, user.ID, user.Role)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, []string{"Error generating JWT token."})
 
@@ -99,7 +121,7 @@ func SignIn(c *gin.Context) {
 	}
 
 	// Check if the user exists
-	user, err := getUserByEmail(req.Email)
+	user, err := _getUserByEmail(req.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			helper.SendError(c, http.StatusBadRequest, []string{"Invalid email or password."})
@@ -120,7 +142,7 @@ func SignIn(c *gin.Context) {
 	}
 
 	// Generate JWT token
-	token, err := generateJWT(user.Email, user.ID, user.Role)
+	token, err := _generateJWT(user.Email, user.ID, user.Role)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, []string{"Error generating token."})
 
@@ -133,28 +155,128 @@ func SignIn(c *gin.Context) {
 	})
 }
 
-// Helper: Get user by email from the database
-func getUserByEmail(email string) (User, error) {
-	var user User
+// @Summary Get User Profile
+// @Description Retrieve the profile of the currently authenticated user
+// @Tags User Profile
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.SuccessResponse{data=ProfileResponse} "Profile retrieved successfully"
+// @Failure 401 {object} helper.ErrorResponse "Unauthorized"
+// @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
+// @Router /profile [get]
+func GetUserProfile(c *gin.Context) {
+	// Extract user ID from JWT claims
+	claims := c.MustGet("claims").(jwt.MapClaims)
+	userID := uint64(claims["userid"].(float64))
+
+	// Fetch profile with associated user
+	var profile models.Profile
+	err := config.DB.Preload("User").Where("user_id = ?", userID).First(&profile).Error
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve profile"})
+		return
+	}
+
+	// Map data to DTO
+	response := ProfileResponse{
+		ID:        profile.ID,
+		Address:   profile.Address,
+		Name:      profile.Name,
+		UserID:    profile.UserID,
+		ImageURL:  profile.ImageURL,
+		CreatedAt: profile.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: profile.UpdatedAt.Format(time.RFC3339),
+		User: UserResponse{
+			ID:        profile.User.ID,
+			Email:     profile.User.Email,
+			Phone:     profile.User.Phone,
+			Role:      profile.User.Role,
+			CreatedAt: profile.User.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: profile.User.UpdatedAt.Format(time.RFC3339),
+		},
+	}
+
+	// Send response
+	helper.SendSuccess(c, http.StatusOK, "Profile retrieved successfully", response)
+}
+
+// @Summary Edit User Profile
+// @Description Update the profile details of the currently authenticated user
+// @Tags User Profile
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param profile body EditProfileRequest true "Profile data to update"
+// @Success 200 {object} helper.SuccessResponse{data=EditProfileResponse} "Profile updated successfully"
+// @Failure 400 {object} helper.ErrorResponse "Validation Error"
+// @Failure 401 {object} helper.ErrorResponse "Unauthorized"
+// @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
+// @Router /profile [put]
+func EditUserProfile(c *gin.Context) {
+	// Extract user ID from JWT claims
+	claims := c.MustGet("claims").(jwt.MapClaims)
+	userID := uint64(claims["userid"].(float64))
+
+	// Parse input
+	var req EditProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{err.Error()})
+		return
+	}
+
+	// Fetch user's profile
+	var profile models.Profile
+	if err := config.DB.Where("user_id = ?", userID).First(&profile).Error; err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve profile"})
+		return
+	}
+
+	// Update profile fields
+	if req.Name != "" {
+		profile.Name = req.Name
+	}
+	if req.Address != "" {
+		profile.Address = req.Address
+	}
+	if req.ImageURL != "" {
+		profile.ImageURL = req.ImageURL
+	}
+
+	// Save updates
+	if err := config.DB.Save(&profile).Error; err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to update profile"})
+		return
+	}
+
+	// Map profile data to DTO
+	response := EditProfileResponse{
+		ID:        profile.ID,
+		Address:   profile.Address,
+		Name:      profile.Name,
+		UserID:    profile.UserID,
+		ImageURL:  profile.ImageURL,
+		CreatedAt: profile.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: profile.UpdatedAt.Format(time.RFC3339),
+	}
+
+	// Send response
+	helper.SendSuccess(c, http.StatusOK, "Profile updated successfully", response)
+}
+
+func _getUserByEmail(email string) (models.User, error) {
+	var user models.User
 	result := config.DB.Where("email = ?", email).First(&user)
 	return user, result.Error
 }
 
-// Helper: Check if email already exists
-func isEmailTaken(email string) bool {
+func _isEmailTaken(email string) bool {
 	var count int64
-	config.DB.Model(&User{}).Where("email = ?", email).Count(&count)
+	config.DB.Model(&models.User{}).Where("email = ?", email).Count(&count)
 	return count > 0
 }
 
-// Helper: Store user in the database
-func createUser(user *User) error {
-	result := config.DB.Create(user)
-	return result.Error
-}
-
-// Helper: Generate JWT
-func generateJWT(email string, userID uint, role string) (string, error) {
+func _generateJWT(email string, userID uint, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"email":  email,
 		"userid": userID,
