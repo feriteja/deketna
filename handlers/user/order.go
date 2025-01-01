@@ -104,6 +104,16 @@ func PlaceOrder(c *gin.Context) {
 			}
 		}
 
+		var productIDs []uint64
+		for _, item := range orderItems {
+			productIDs = append(productIDs, item.ProductID)
+		}
+
+		if err := tx.Where("user_id = ? AND product_id IN ?", buyerID, productIDs).
+			Delete(&models.CartItem{}).Error; err != nil {
+			return fmt.Errorf("failed to remove items from cart: %v", err)
+		}
+
 		return nil // Commit transaction if no errors
 	})
 	if err != nil {
@@ -113,7 +123,7 @@ func PlaceOrder(c *gin.Context) {
 
 	// Success Response
 	helper.SendSuccess(c, http.StatusOK, "Order placed successfully", gin.H{
-		"message": "Order placed successfully",
+		"message": "Order  placed successfully",
 	})
 }
 

@@ -116,13 +116,16 @@ func GetCarts(c *gin.Context) {
 		Select(`
 			cart_items.id,
 			cart_items.product_id,
+			cart_items.updated_at,
+			cart_items.quantity,
+
 			products.name AS product_name,
 			products.price, products.image_url,
-			cart_items.quantity,
 			(products.price * cart_items.quantity) AS total_price`).
 		Joins("JOIN carts ON carts.id = cart_items.cart_id").
 		Joins("JOIN products ON products.id = cart_items.product_id").
 		Where("carts.buyer_id = ?", buyerID).
+		Order("cart_items.updated_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Scan(&cartItems).Error

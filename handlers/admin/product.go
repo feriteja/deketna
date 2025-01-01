@@ -5,7 +5,6 @@ import (
 	"deketna/helper"
 	"deketna/models"
 	"deketna/utils"
-	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -333,9 +332,6 @@ func _getProductsPaginated(db *gorm.DB, page, limit int, sellerID *uint64, selle
 		return nil, 0, err
 	}
 
-	userJSON, _ := json.MarshalIndent(products, "", "  ")
-	fmt.Println(string(userJSON))
-
 	// Map to DTO
 	var response = make([]GetProductResponseComplete, len(products))
 
@@ -378,21 +374,19 @@ func _getProductDetail(db *gorm.DB, productId uint64) (*GetProductResponseComple
 		return nil, err
 	}
 
-	userJSON, _ := json.MarshalIndent(product, "", "  ")
-	fmt.Println(string(userJSON))
-
 	// Map to DTO
 
 	response := GetProductResponseComplete{
 		GetProductResponse: GetProductResponse{
-			ID:        product.ID,
-			Name:      product.Name,
-			Price:     product.Price,
-			Stock:     product.Stock,
-			SellerID:  product.SellerID,
-			ImageURL:  product.ImageURL,
-			CreatedAt: product.CreatedAt,
-			UpdatedAt: product.UpdatedAt,
+			ID:         product.ID,
+			Name:       product.Name,
+			Price:      product.Price,
+			Stock:      product.Stock,
+			SellerID:   product.SellerID,
+			CategoryID: product.CategoryID,
+			ImageURL:   product.ImageURL,
+			CreatedAt:  product.CreatedAt,
+			UpdatedAt:  product.UpdatedAt,
 		},
 		Seller: Profile{
 			ID:       product.Seller.ID,
