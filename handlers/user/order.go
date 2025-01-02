@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -244,4 +245,97 @@ func ViewOrders(c *gin.Context) {
 	// Fetch total number of orders for the buyer
 
 	helper.SendPagination(c, http.StatusOK, "Orders retrieved successfully", finalOrders, pagination)
+}
+
+// GetOrderItemsDetail retrieves the details of a specific order for an authenticated user
+// @Summary Get Order Items Detail
+// @Description Retrieve details of a specific order, accessible only to the order's buyer
+// @Tags User Orders
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param order_id path int true "Order ID"
+// @Success 200 {object} helper.SuccessResponse{data=OrderDetailResponse} "Order details fetched successfully"
+// @Failure 400 {object} helper.ErrorResponse "Invalid order ID"
+// @Failure 401 {object} helper.ErrorResponse "Unauthorized"
+// @Failure 403 {object} helper.ErrorResponse "Access denied"
+// @Failure 500 {object} helper.ErrorResponse "Failed to fetch order details"
+// @Router /order/{order_id} [get]
+func GetOrderItemsDetail(c *gin.Context) {
+	// Step 1: Extract User ID from JWT claims
+	claims := c.MustGet("claims").(jwt.MapClaims)
+	buyerID := uint64(claims["userid"].(float64))
+
+	// Step 2: Parse Order ID from path parameter
+	orderIDStr := c.Param("order_id")
+	orderID, err := strconv.ParseUint(orderIDStr, 10, 64)
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, []string{"Invalid order ID"})
+		return
+	}
+
+	// Step 3: Verify ownership of the order
+	var order models.Order
+	err = config.DB.Where("id = ? AND buyer_id = ?", orderID, buyerID).First(&order).Error
+	if err != nil {
+		helper.SendError(c, http.StatusForbidden, []string{"You do not have access to this order"})
+		return
+	}
+
+	// Step 4: Fetch Order Details
+	var orderDetail OrderDetailResponse
+	err = config.DB.Table("orders").
+		Select(`
+			orders.id AS order_id,
+			COALESCE(profiles.name, '') AS buyer_name,
+			orders.total_amount,
+			orders.status,
+			orders.created_at,
+			orders.updated_at`).
+		Joins("JOIN profiles ON profiles.user_id = orders.buyer_id").
+		Where("orders.id = ?", orderID).
+		Scan(&orderDetail).Error
+
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to fetch order details"})
+		return
+	}
+
+	// Step 5: Fetch Order Items Separately
+	var orderItems []OrderItemDetailResponse
+	err = config.DB.Table("order_items").
+		Select(`
+			products.name AS product_name,
+			order_items.quantity,
+			order_items.price,
+			(order_items.price * order_items.quantity) AS total_price,
+			products.image_url`).
+		Joins("JOIN products ON products.id = order_items.product_id").
+		Where("order_items.order_id = ?", orderID).
+		Scan(&orderItems).Error
+
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to fetch order items"})
+		return
+	}
+
+	// Step 6: Attach items to order details
+	orderDetail.CreatedAt = order.CreatedAt.Format(time.RFC3339)
+	orderDetail.UpdatedAt = order.UpdatedAt.Format(time.RFC3339)
+
+	var finalOrders []struct {
+		OrderDetailResponse
+		Items []OrderItemDetailResponse `json:"order_items"`
+	}
+
+	finalOrders = append(finalOrders, struct {
+		OrderDetailResponse
+		Items []OrderItemDetailResponse `json:"order_items"`
+	}{
+		OrderDetailResponse: orderDetail,
+		Items:               orderItems,
+	})
+
+	// Step 7: Send Response
+	helper.SendSuccess(c, http.StatusOK, "Order details fetched successfully", finalOrders)
 }

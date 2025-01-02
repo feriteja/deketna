@@ -872,6 +872,79 @@ const docTemplate = `{
                 }
             }
         },
+        "/order/{order_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve details of a specific order, accessible only to the order's buyer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Orders"
+                ],
+                "summary": "Get Order Items Detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Order ID",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order details fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/user.OrderDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid order ID",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch order details",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/orders": {
             "get": {
                 "security": [
@@ -1673,6 +1746,55 @@ const docTemplate = `{
                 }
             }
         },
+        "user.OrderDetailResponse": {
+            "type": "object",
+            "properties": {
+                "buyer_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "integer"
+                },
+                "order_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.OrderItemDetailResponse"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.OrderItemDetailResponse": {
+            "type": "object",
+            "properties": {
+                "image_url": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "total_price": {
+                    "type": "number"
+                }
+            }
+        },
         "user.OrderItemRequest": {
             "type": "object",
             "required": [
@@ -1688,30 +1810,9 @@ const docTemplate = `{
                 }
             }
         },
-        "user.OrderItemResponse": {
-            "type": "object",
-            "properties": {
-                "order_id": {
-                    "type": "integer"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "product_name": {
-                    "type": "string"
-                },
-                "quantity": {
-                    "type": "integer"
-                }
-            }
-        },
         "user.OrderResponse": {
             "type": "object",
             "properties": {
-                "buyer_name": {
-                    "type": "string",
-                    "example": "Deketna"
-                },
                 "created_at": {
                     "description": "Changed to string",
                     "type": "string"
@@ -1719,12 +1820,6 @@ const docTemplate = `{
                 "order_id": {
                     "type": "integer",
                     "example": 1
-                },
-                "order_items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.OrderItemResponse"
-                    }
                 },
                 "status": {
                     "type": "string",

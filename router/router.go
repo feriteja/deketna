@@ -36,8 +36,9 @@ func InitializeRoutes(r *gin.Engine) {
 		buyerRoutes.DELETE("/cart", user.DeleteCart)
 		buyerRoutes.PUT("/cart", user.UpdateCart)
 
-		buyerRoutes.POST("/order", user.PlaceOrder)
 		buyerRoutes.GET("/orders", user.ViewOrders)
+		buyerRoutes.GET("/order/:order_id", user.GetOrderItemsDetail)
+		buyerRoutes.POST("/order", user.PlaceOrder)
 	}
 
 	// Admin Routes

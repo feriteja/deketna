@@ -16,8 +16,25 @@ type OrderItemResponse struct {
 
 type OrderResponse struct {
 	OrderID     uint64  `json:"order_id" example:"1"`
- 	TotalAmount float64 `json:"total_amount" example:"75.50"`
+	TotalAmount float64 `json:"total_amount" example:"75.50"`
 	Status      string  `json:"status" example:"completed"`
 	CreatedAt   string  `json:"created_at"` // Changed to string
 	UpdatedAt   string  `json:"updated_at"` // Changed to string
+}
+
+type OrderDetailResponse struct {
+	OrderID     uint64  `json:"order_id"`
+	BuyerName   string  `json:"buyer_name"`
+	TotalAmount float64 `json:"total_amount"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+type OrderItemDetailResponse struct {
+	ProductName string  `json:"product_name"`
+	Quantity    int     `json:"quantity"`
+	Price       float64 `json:"price"`
+	TotalPrice  float64 `json:"total_price"`
+	ImageURL    string  `json:"image_url"`
 }
