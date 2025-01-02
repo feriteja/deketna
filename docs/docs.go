@@ -297,7 +297,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/admin.GetProductResponse"
+                                            "$ref": "#/definitions/admin.GetProductResponseComplete"
                                         }
                                     }
                                 }
@@ -513,7 +513,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/admin.GetProductResponse"
+                                                "$ref": "#/definitions/admin.GetProductResponseComplete"
                                             }
                                         }
                                     }
@@ -908,17 +908,20 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated list of orders with details",
+                        "description": "List of products with seller details",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                    "$ref": "#/definitions/helper.PaginationResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/user.PaginatedOrdersResponse"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/user.OrderResponse"
+                                            }
                                         }
                                     }
                                 }
@@ -1334,7 +1337,7 @@ const docTemplate = `{
                 }
             }
         },
-        "admin.GetProductResponse": {
+        "admin.GetProductResponseComplete": {
             "type": "object",
             "properties": {
                 "category": {
@@ -1344,6 +1347,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "created_at": {
+                    "description": "Changed to string",
                     "type": "string"
                 },
                 "id": {
@@ -1370,6 +1374,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "updated_at": {
+                    "description": "Changed to string",
                     "type": "string"
                 }
             }
@@ -1686,32 +1691,40 @@ const docTemplate = `{
         "user.OrderItemResponse": {
             "type": "object",
             "properties": {
+                "order_id": {
+                    "type": "integer"
+                },
                 "price": {
-                    "type": "number",
-                    "example": 25
+                    "type": "number"
                 },
                 "product_name": {
-                    "type": "string",
-                    "example": "Product A"
+                    "type": "string"
                 },
                 "quantity": {
-                    "type": "integer",
-                    "example": 2
+                    "type": "integer"
                 }
             }
         },
         "user.OrderResponse": {
             "type": "object",
             "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.OrderItemResponse"
-                    }
+                "buyer_name": {
+                    "type": "string",
+                    "example": "Deketna"
+                },
+                "created_at": {
+                    "description": "Changed to string",
+                    "type": "string"
                 },
                 "order_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "order_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.OrderItemResponse"
+                    }
                 },
                 "status": {
                     "type": "string",
@@ -1720,43 +1733,10 @@ const docTemplate = `{
                 "total_amount": {
                     "type": "number",
                     "example": 75.5
-                }
-            }
-        },
-        "user.PaginatedOrdersResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "List of orders",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.OrderResponse"
-                    }
                 },
-                "isNext": {
-                    "description": "Whether there is a next page",
-                    "type": "boolean",
-                    "example": true
-                },
-                "isPrev": {
-                    "description": "Whether there is a previous page",
-                    "type": "boolean",
-                    "example": false
-                },
-                "limit": {
-                    "description": "Number of items per page",
-                    "type": "integer",
-                    "example": 10
-                },
-                "page": {
-                    "description": "Current page number",
-                    "type": "integer",
-                    "example": 1
-                },
-                "totalItem": {
-                    "description": "Total number of items",
-                    "type": "integer",
-                    "example": 25
+                "updated_at": {
+                    "description": "Changed to string",
+                    "type": "string"
                 }
             }
         },

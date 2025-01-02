@@ -6,7 +6,6 @@ import (
 	"deketna/models"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -109,7 +108,7 @@ func PlaceOrder(c *gin.Context) {
 			productIDs = append(productIDs, item.ProductID)
 		}
 
-		if err := tx.Where("user_id = ? AND product_id IN ?", buyerID, productIDs).
+		if err := tx.Where("product_id IN ?", productIDs).
 			Delete(&models.CartItem{}).Error; err != nil {
 			return fmt.Errorf("failed to remove items from cart: %v", err)
 		}
@@ -136,7 +135,7 @@ func PlaceOrder(c *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Number of items per page" default(10)
 // @Security BearerAuth
-// @Success 200 {object} helper.SuccessResponse{data=PaginatedOrdersResponse} "Paginated list of orders with details"
+// @Success 200 {object} helper.PaginationResponse{data=[]OrderResponse} "List of products with seller details"
 // @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
 // @Router /orders [get]
 func ViewOrders(c *gin.Context) {
@@ -167,52 +166,82 @@ func ViewOrders(c *gin.Context) {
 		return
 	}
 
-	// Fetch orders for the buyer
-	var orders []models.Order
-	if err := config.DB.Preload("Items.Product").Where("buyer_id = ?", buyerID).Find(&orders).Limit(limitInt).Offset(offset).Error; err != nil {
-		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve orders"})
+	// Step 1: Fetch Orders
+	var orders []OrderResponse
+	err = config.DB.Table("orders").
+		Select(`
+			orders.id AS order_id,
+			orders.buyer_id,
+			orders.total_amount,
+			orders.status,
+			orders.created_at,
+			orders.updated_at`).
+		Where("orders.buyer_id = ?", buyerID).
+		Order("orders.created_at DESC").
+		Limit(limitInt).
+		Offset(offset).
+		Scan(&orders).Error
+
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to fetch orders"})
 		return
 	}
 
-	// Format orders with detailed items
-	formattedOrders := []gin.H{}
+	// Step 2: Fetch Order Items for Each Order
+	var orderIDs []uint64
 	for _, order := range orders {
-		items := []gin.H{}
-		for _, item := range order.Items {
-			items = append(items, gin.H{
-				"product_name": item.Product.Name,
-				"quantity":     item.Quantity,
-				"price":        item.Price,
-			})
-		}
+		orderIDs = append(orderIDs, order.OrderID)
+	}
 
-		formattedOrders = append(formattedOrders, gin.H{
-			"order_id":     order.ID,
-			"total_amount": order.TotalAmount,
-			"status":       order.Status,
-			"items":        items,
+	var items []OrderItemResponse
+	if len(orderIDs) > 0 {
+		err = config.DB.Table("order_items").
+			Select(`
+				order_items.order_id,
+				products.name AS product_name,
+				order_items.quantity,
+				order_items.price`).
+			Joins("JOIN products ON products.id = order_items.product_id").
+			Where("order_items.order_id IN ?", orderIDs).
+			Scan(&items).Error
+
+		if err != nil {
+			helper.SendError(c, http.StatusInternalServerError, []string{"Failed to fetch order items"})
+			return
+		}
+	}
+
+	// Step 3: Map Order Items to Their Respective Orders
+	orderItemMap := make(map[uint64][]OrderItemResponse)
+	for _, item := range items {
+		orderItemMap[item.OrderID] = append(orderItemMap[item.OrderID], item)
+	}
+
+	var finalOrders []struct {
+		OrderResponse
+		Items []OrderItemResponse `json:"order_items"`
+	}
+	for _, order := range orders {
+		finalOrders = append(finalOrders, struct {
+			OrderResponse
+			Items []OrderItemResponse `json:"order_items"`
+		}{
+			OrderResponse: order,
+			Items:         orderItemMap[order.OrderID],
 		})
 	}
 
-	// Calculate pagination metadata
-	isNext := (pageInt * limitInt) < int(totalItems)
-	isPrev := pageInt > 1
-
-	// Print pagination values
-
-	// Fetch total number of orders for the buyer
-	if err := config.DB.Model(&models.Order{}).Where("buyer_id = ?", buyerID).Count(&totalItems).Error; err != nil {
-		log.Println("Error occurred while counting orders:", err)
-		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to count orders"})
-		return
+	totalPages := (int(totalItems) + limitInt - 1) / limitInt
+	pagination := helper.PaginationMetadata{
+		Page:       pageInt,
+		Limit:      limitInt,
+		TotalItems: int(totalItems),
+		TotalPages: totalPages,
+		IsNext:     pageInt < totalPages,
+		IsPrev:     pageInt > 1,
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "Orders retrieved successfully", gin.H{
-		"page":      pageInt,
-		"limit":     limitInt,
-		"totalItem": totalItems,
-		"isNext":    isNext,
-		"isPrev":    isPrev,
-		"data":      formattedOrders,
-	})
+	// Fetch total number of orders for the buyer
+
+	helper.SendPagination(c, http.StatusOK, "Orders retrieved successfully", finalOrders, pagination)
 }

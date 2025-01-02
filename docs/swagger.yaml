@@ -33,13 +33,14 @@ definitions:
         example: Invalid input
         type: string
     type: object
-  admin.GetProductResponse:
+  admin.GetProductResponseComplete:
     properties:
       category:
         $ref: '#/definitions/admin.Category'
       category_id:
         type: integer
       created_at:
+        description: Changed to string
         type: string
       id:
         example: 1
@@ -58,6 +59,7 @@ definitions:
       stock:
         type: integer
       updated_at:
+        description: Changed to string
         type: string
     type: object
   admin.OrderBuyerResponse:
@@ -270,59 +272,39 @@ definitions:
     type: object
   user.OrderItemResponse:
     properties:
+      order_id:
+        type: integer
       price:
-        example: 25
         type: number
       product_name:
-        example: Product A
         type: string
       quantity:
-        example: 2
         type: integer
     type: object
   user.OrderResponse:
     properties:
-      items:
-        items:
-          $ref: '#/definitions/user.OrderItemResponse'
-        type: array
+      buyer_name:
+        example: Deketna
+        type: string
+      created_at:
+        description: Changed to string
+        type: string
       order_id:
         example: 1
         type: integer
+      order_items:
+        items:
+          $ref: '#/definitions/user.OrderItemResponse'
+        type: array
       status:
         example: completed
         type: string
       total_amount:
         example: 75.5
         type: number
-    type: object
-  user.PaginatedOrdersResponse:
-    properties:
-      data:
-        description: List of orders
-        items:
-          $ref: '#/definitions/user.OrderResponse'
-        type: array
-      isNext:
-        description: Whether there is a next page
-        example: true
-        type: boolean
-      isPrev:
-        description: Whether there is a previous page
-        example: false
-        type: boolean
-      limit:
-        description: Number of items per page
-        example: 10
-        type: integer
-      page:
-        description: Current page number
-        example: 1
-        type: integer
-      totalItem:
-        description: Total number of items
-        example: 25
-        type: integer
+      updated_at:
+        description: Changed to string
+        type: string
     type: object
   user.ProductWithSeller:
     properties:
@@ -620,7 +602,7 @@ paths:
             - $ref: '#/definitions/helper.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/admin.GetProductResponse'
+                  $ref: '#/definitions/admin.GetProductResponseComplete'
               type: object
         "400":
           description: Invalid query parameters
@@ -722,7 +704,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/admin.GetProductResponse'
+                    $ref: '#/definitions/admin.GetProductResponseComplete'
                   type: array
               type: object
         "400":
@@ -967,13 +949,15 @@ paths:
       - application/json
       responses:
         "200":
-          description: Paginated list of orders with details
+          description: List of products with seller details
           schema:
             allOf:
-            - $ref: '#/definitions/helper.SuccessResponse'
+            - $ref: '#/definitions/helper.PaginationResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/user.PaginatedOrdersResponse'
+                  items:
+                    $ref: '#/definitions/user.OrderResponse'
+                  type: array
               type: object
         "500":
           description: Internal Server Error
