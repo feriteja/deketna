@@ -905,7 +905,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/user.OrderDetailResponse"
+                                            "$ref": "#/definitions/user.OrderDetailWithItemsResponse"
                                         }
                                     }
                                 }
@@ -1740,7 +1740,7 @@
                 }
             }
         },
-        "user.OrderDetailResponse": {
+        "user.OrderDetailWithItemsResponse": {
             "type": "object",
             "properties": {
                 "buyer_name": {

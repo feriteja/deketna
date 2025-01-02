@@ -255,7 +255,7 @@ func ViewOrders(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param order_id path int true "Order ID"
-// @Success 200 {object} helper.SuccessResponse{data=OrderDetailResponse} "Order details fetched successfully"
+// @Success 200 {object} helper.SuccessResponse{data=OrderDetailWithItemsResponse} "Order details fetched successfully"
 // @Failure 400 {object} helper.ErrorResponse "Invalid order ID"
 // @Failure 401 {object} helper.ErrorResponse "Unauthorized"
 // @Failure 403 {object} helper.ErrorResponse "Access denied"
@@ -323,19 +323,11 @@ func GetOrderItemsDetail(c *gin.Context) {
 	orderDetail.CreatedAt = order.CreatedAt.Format(time.RFC3339)
 	orderDetail.UpdatedAt = order.UpdatedAt.Format(time.RFC3339)
 
-	var finalOrders []struct {
-		OrderDetailResponse
-		Items []OrderItemDetailResponse `json:"order_items"`
-	}
-
-	finalOrders = append(finalOrders, struct {
-		OrderDetailResponse
-		Items []OrderItemDetailResponse `json:"order_items"`
-	}{
+	finalResponse := OrderDetailWithItemsResponse{
 		OrderDetailResponse: orderDetail,
 		Items:               orderItems,
-	})
+	}
 
 	// Step 7: Send Response
-	helper.SendSuccess(c, http.StatusOK, "Order details fetched successfully", finalOrders)
+	helper.SendSuccess(c, http.StatusOK, "Order details fetched successfully", finalResponse)
 }

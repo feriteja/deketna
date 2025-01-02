@@ -911,7 +911,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/user.OrderDetailResponse"
+                                            "$ref": "#/definitions/user.OrderDetailWithItemsResponse"
                                         }
                                     }
                                 }
@@ -1746,7 +1746,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.OrderDetailResponse": {
+        "user.OrderDetailWithItemsResponse": {
             "type": "object",
             "properties": {
                 "buyer_name": {

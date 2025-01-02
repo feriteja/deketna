@@ -38,3 +38,8 @@ type OrderItemDetailResponse struct {
 	TotalPrice  float64 `json:"total_price"`
 	ImageURL    string  `json:"image_url"`
 }
+
+type OrderDetailWithItemsResponse struct {
+	OrderDetailResponse
+	Items []OrderItemDetailResponse `json:"order_items"`
+}

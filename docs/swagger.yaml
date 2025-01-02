@@ -260,7 +260,7 @@ definitions:
       user_id:
         type: integer
     type: object
-  user.OrderDetailResponse:
+  user.OrderDetailWithItemsResponse:
     properties:
       buyer_name:
         type: string
@@ -965,7 +965,7 @@ paths:
             - $ref: '#/definitions/helper.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/user.OrderDetailResponse'
+                  $ref: '#/definitions/user.OrderDetailWithItemsResponse'
               type: object
         "400":
           description: Invalid order ID
