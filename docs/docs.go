@@ -24,14 +24,14 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/orders": {
+        "/admin/order/{order_id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve a paginated list of all orders with buyer details",
+                "description": "Retrieve details of a specific order, accessible only to the order's buyer",
                 "consumes": [
                     "application/json"
                 ],
@@ -41,7 +41,80 @@ const docTemplate = `{
                 "tags": [
                     "Admin Orders"
                 ],
-                "summary": "Admin View Orders",
+                "summary": "Get Order Items Detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Order ID",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order details fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/admin.OrderDetailWithItemsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid order ID",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch order details",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a list of orders placed by the authenticated buyer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Orders"
+                ],
+                "summary": "View Orders",
                 "parameters": [
                     {
                         "type": "integer",
@@ -56,27 +129,24 @@ const docTemplate = `{
                         "description": "Number of items per page",
                         "name": "limit",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by order status (e.g., pending, completed, cancelled)",
-                        "name": "status",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated list of all orders with details",
+                        "description": "List of products with seller details",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/helper.SuccessResponse"
+                                    "$ref": "#/definitions/helper.PaginationResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/admin.PaginatedAdminOrdersResponse"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/admin.OrderDetailWithItemsResponse"
+                                            }
                                         }
                                     }
                                 }
@@ -1361,32 +1431,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "admin.AdminOrderResponse": {
-            "type": "object",
-            "properties": {
-                "buyer": {
-                    "$ref": "#/definitions/admin.OrderBuyerResponse"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/admin.OrderItemResponse"
-                    }
-                },
-                "order_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "status": {
-                    "type": "string",
-                    "example": "completed"
-                },
-                "total_amount": {
-                    "type": "number",
-                    "example": 75.5
-                }
-            }
-        },
         "admin.Category": {
             "type": "object",
             "properties": {
@@ -1463,57 +1507,65 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "name": {
+                    "type": "string",
+                    "example": "buyer1234"
+                },
                 "phone": {
                     "type": "string",
                     "example": "123456789"
                 }
             }
         },
-        "admin.OrderItemResponse": {
+        "admin.OrderDetailWithItemsResponse": {
             "type": "object",
             "properties": {
-                "price": {
-                    "type": "number",
-                    "example": 25
+                "buyer": {
+                    "$ref": "#/definitions/admin.OrderBuyerResponse"
                 },
-                "product_name": {
-                    "type": "string",
-                    "example": "Product A"
+                "created_at": {
+                    "type": "string"
                 },
-                "quantity": {
-                    "type": "integer",
-                    "example": 2
+                "order_id": {
+                    "type": "integer"
+                },
+                "order_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.OrderItemResponse"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
-        "admin.PaginatedAdminOrdersResponse": {
+        "admin.OrderItemResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/admin.AdminOrderResponse"
-                    }
+                "image_url": {
+                    "type": "string"
                 },
-                "isNext": {
-                    "type": "boolean",
-                    "example": true
+                "order_id": {
+                    "type": "integer"
                 },
-                "isPrev": {
-                    "type": "boolean",
-                    "example": false
+                "price": {
+                    "type": "number"
                 },
-                "limit": {
-                    "type": "integer",
-                    "example": 10
+                "product_name": {
+                    "type": "string"
                 },
-                "page": {
-                    "type": "integer",
-                    "example": 1
+                "quantity": {
+                    "type": "integer"
                 },
-                "totalItem": {
-                    "type": "integer",
-                    "example": 50
+                "total_price": {
+                    "type": "number"
                 }
             }
         },

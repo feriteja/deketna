@@ -54,6 +54,7 @@ func InitializeRoutes(r *gin.Engine) {
 		adminRoutes.PUT("/product/:id", admin.AdminEditProduct)
 
 		adminRoutes.GET("/orders", admin.ViewOrders)
+		adminRoutes.GET("/order/:order_id", admin.GetOrderItemsDetail)
 		adminRoutes.PUT("/orders/:id/status", admin.UpdateOrderStatus)
 
 		// Example of other admin routes (if needed):

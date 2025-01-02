@@ -12,8 +12,6 @@ type OrderItemResponse struct {
 	Price       float64 `json:"price"`
 }
 
-// OrderResponse represents a single order
-
 type OrderResponse struct {
 	OrderID     uint64  `json:"order_id" example:"1"`
 	TotalAmount float64 `json:"total_amount" example:"75.50"`
