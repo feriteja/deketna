@@ -270,7 +270,7 @@ func GetOrderItemsDetail(c *gin.Context) {
 // @Success 200 {object} helper.SuccessResponse{data=object{order_id=uint64,status=string}} "Order status updated successfully"
 // @Failure 400 {object} helper.ErrorResponse "Bad Request: Invalid status or order not found"
 // @Failure 500 {object} helper.ErrorResponse "Internal Server Error"
-// @Router /admin/orders/{id}/status [put]
+// @Router /admin/order/{id}/status [put]
 func UpdateOrderStatus(c *gin.Context) {
 	// Parse order ID from path
 	orderID := c.Param("id")

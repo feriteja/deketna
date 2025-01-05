@@ -20,12 +20,15 @@ const (
 	GlobalLimitRequests   = 15
 	GlobalLimitWindow     = 1 * time.Minute
 	SpecificLimitRequests = 5
+	AdminLimitRequests    = 35
 	SpecificLimitWindow   = 1 * time.Minute
 )
 
 var (
+	adminVisitors    = make(map[string]*Visitor)
 	globalVisitors   = make(map[string]*Visitor)
 	specificVisitors = make(map[string]*Visitor)
+	muAdmin          sync.Mutex
 	muGlobal         sync.Mutex
 	muSpecific       sync.Mutex
 )
@@ -92,6 +95,25 @@ func SpecificRateLimiter() gin.HandlerFunc {
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error": "Too many requests to this endpoint. Please try again later.",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+func AdminRateLimiter() gin.HandlerFunc {
+	// Start cleanup routine
+	go cleanupVisitors(adminVisitors, &muAdmin, SpecificLimitWindow)
+
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		limiter := getVisitor(ip, adminVisitors, &muAdmin, AdminLimitRequests, SpecificLimitWindow)
+
+		if !limiter.Allow() {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Too many requests. Please try again later.",
 			})
 			c.Abort()
 			return

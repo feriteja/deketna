@@ -170,9 +170,8 @@ func GetUserProfile(c *gin.Context) {
 	claims := c.MustGet("claims").(jwt.MapClaims)
 	userID := uint64(claims["userid"].(float64))
 
-	// Fetch profile with associated user
-	var profile models.Profile
-	err := config.DB.Preload("User").Where("user_id = ?", userID).First(&profile).Error
+	var user models.User
+	err := config.DB.Preload("Profile").Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve profile"})
 		return
@@ -180,20 +179,20 @@ func GetUserProfile(c *gin.Context) {
 
 	// Map data to DTO
 	response := ProfileResponse{
-		ID:        profile.ID,
-		Address:   profile.Address,
-		Name:      profile.Name,
-		UserID:    profile.UserID,
-		ImageURL:  profile.ImageURL,
-		CreatedAt: profile.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: profile.UpdatedAt.Format(time.RFC3339),
+		ID:        user.Profile.ID,
+		Address:   user.Profile.Address,
+		Name:      user.Profile.Name,
+		UserID:    user.ID,
+		ImageURL:  user.Profile.ImageURL,
+		CreatedAt: user.Profile.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: user.Profile.UpdatedAt.Format(time.RFC3339),
 		User: UserResponse{
-			ID:        profile.User.ID,
-			Email:     profile.User.Email,
-			Phone:     profile.User.Phone,
-			Role:      profile.User.Role,
-			CreatedAt: profile.User.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: profile.User.UpdatedAt.Format(time.RFC3339),
+			ID:        user.ID,
+			Email:     user.Email,
+			Phone:     user.Phone,
+			Role:      user.Role,
+			CreatedAt: user.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
 		},
 	}
 

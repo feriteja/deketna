@@ -399,6 +399,57 @@ info:
   title: Deketna API
   version: "1.0"
 paths:
+  /admin/order/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Admin can update the status of an order (accept, reject, ontheway,
+        finish)
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New order status (accept, reject, ontheway, finish)
+        in: body
+        name: status
+        required: true
+        schema:
+          properties:
+            status:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order status updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.SuccessResponse'
+            - properties:
+                data:
+                  properties:
+                    order_id:
+                      type: integer
+                    status:
+                      type: string
+                  type: object
+              type: object
+        "400":
+          description: 'Bad Request: Invalid status or order not found'
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Order Status
+      tags:
+      - Admin Orders
   /admin/order/{order_id}:
     get:
       consumes:
@@ -481,57 +532,6 @@ paths:
       security:
       - BearerAuth: []
       summary: View Orders
-      tags:
-      - Admin Orders
-  /admin/orders/{id}/status:
-    put:
-      consumes:
-      - application/json
-      description: Admin can update the status of an order (accept, reject, ontheway,
-        finish)
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: New order status (accept, reject, ontheway, finish)
-        in: body
-        name: status
-        required: true
-        schema:
-          properties:
-            status:
-              type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Order status updated successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/helper.SuccessResponse'
-            - properties:
-                data:
-                  properties:
-                    order_id:
-                      type: integer
-                    status:
-                      type: string
-                  type: object
-              type: object
-        "400":
-          description: 'Bad Request: Invalid status or order not found'
-          schema:
-            $ref: '#/definitions/helper.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/helper.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update Order Status
       tags:
       - Admin Orders
   /admin/product:

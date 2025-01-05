@@ -9,28 +9,23 @@ type User struct {
 	Email     string `gorm:"unique;not null"`
 	Phone     string `gorm:"size:15"`
 	Password  string `gorm:"not null"`
-	Role      string `gorm:"type:user_role;not null"` // Referencing the user_role enum type
+	Role      string `gorm:"type:user_role;not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"` // Use *time.Time for nullable timestamp
-
-	Products []Product `gorm:"foreignKey:SellerID"` // One-to-many with Product
-	Orders   []Order   `gorm:"foreignKey:BuyerID"`  // One-to-many with Transaction
-
-	Profile Profile `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+	Products  []Product  `gorm:"foreignKey:SellerID"`
+	Orders    []Order    `gorm:"foreignKey:BuyerID"`
+	Profile   Profile    `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 type Profile struct {
-	ID        uint   `gorm:"primaryKey"`
-	Address   string `gorm:"type:text"`
-	Name      string `gorm:"size:255"`
-	UserID    uint   `gorm:"unique;not null"`
-	ImageURL  string `json:"image_url"` // URL or path to the image
-	CreatedAt time.Time
-	UpdatedAt time.Time
-
-	// Reference User as a pointer to avoid cyclic dependency
-	User *User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ID        uint      `gorm:"primaryKey"`
+	Address   string    `gorm:"type:text"`
+	Name      string    `gorm:"size:255"`
+	UserID    uint      `gorm:"unique;not null"`
+	ImageURL  string    `json:"image_url"` // URL or path to the image
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Product struct {
