@@ -18,6 +18,7 @@ import (
 // @Produce json
 // @Param page query int false "Page number (default: 1)"
 // @Param limit query int false "Number of items per page (default: 25)"
+// @Param search_product query string false "Search specific product by keyword (default: "botol")"
 // @Success 200 {object} helper.PaginationResponse{data=[]ProductWithSeller} "List of products with seller details"
 // @Failure 400 {object} helper.ErrorResponse "Invalid query parameters"
 // @Router /products [get]
@@ -26,6 +27,11 @@ func GetProducts(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "25")
 
+	search_product := c.Query("search_product")
+	var searchProduct *string
+	if search_product != "" {
+		searchProduct = &search_product
+	}
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
 		page = 1
@@ -56,8 +62,14 @@ func GetProducts(c *gin.Context) {
 		Joins("JOIN users ON users.id = products.seller_id").
 		Joins("LEFT JOIN profiles ON profiles.user_id = users.id").
 		Limit(limit).
-		Offset(offset).
-		Scan(&products)
+		Offset(offset)
+
+	if searchProduct != nil {
+		query = query.Where("LOWER(products.name) ILIKE LOWER(?)", "%"+*searchProduct+"%")
+
+	}
+
+	query.Scan(&products)
 
 	if query.Error != nil {
 		helper.SendError(c, http.StatusInternalServerError, []string{"Failed to retrieve products"})

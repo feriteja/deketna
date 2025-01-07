@@ -1161,6 +1161,12 @@ const docTemplate = `{
                         "description": "Number of items per page (default: 25)",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search specific product by keyword (default: ",
+                        "name": "search_product",
+                        "in": "query"
                     }
                 ],
                 "responses": {

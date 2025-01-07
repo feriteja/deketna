@@ -1103,6 +1103,10 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: 'Search specific product by keyword (default: '
+        in: query
+        name: search_product
+        type: string
       produces:
       - application/json
       responses:
